@@ -117,7 +117,22 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground text-[15px] leading-relaxed md:text-base;
+    font-family: var(--font-base), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  h1 {
+    @apply text-3xl md:text-4xl font-extrabold leading-snug tracking-tight;
+  }
+  h2 {
+    @apply text-2xl font-bold leading-snug tracking-tight;
+  }
+  h3 {
+    @apply text-xl font-semibold leading-snug;
+  }
+  label, .form-label {
+    @apply text-sm font-semibold tracking-wide;
+  }
+  p, span, li {
+    @apply leading-relaxed;
   }
 }
-

@@ -56,9 +56,9 @@ export const StudentListItem: React.FC<StudentListItemProps> = ({
   return (
     <>
       <div className="border-b border-gray-200 bg-white/80 p-3 transition-colors hover:bg-emerald-50/40">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex flex-col sm:flex-1 space-y-1">
-            <div className="flex flex-row sm:items-center sm:gap-3 lg:justify-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-1 space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-[1.3fr,auto] items-start md:items-center gap-2">
               <p className="font-semibold text-lg sm:text-xl text-foreground">{student.name}</p>
               <span
                 className={`inline-block w-fit px-3 py-1 rounded text-md font-medium mt-1 sm:mt-0 ${getStatusBgColor(
@@ -69,13 +69,13 @@ export const StudentListItem: React.FC<StudentListItemProps> = ({
               </span>
             </div>
 
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-2">
               {(student.courses || []).map((courseId) => (
                 <button
                   key={courseId}
                   type="button"
                   onClick={() => onNavigateToCourse?.(courseId)}
-                  className="rounded-full border border-border/60 bg-white/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition hover:border-primary/60 hover:text-primary"
+                  className="rounded-full border border-border/60 bg-white/80 px-3 py-1.5 text-[11px] font-medium text-muted-foreground transition hover:border-primary/60 hover:text-primary"
                 >
                   {courseLabels?.[courseId] || courseId}
                 </button>

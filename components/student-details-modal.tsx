@@ -5,6 +5,7 @@ import { useState } from "react"
 
 import type { Student } from "@/lib/types"
 import type { StudentCourseSummary } from "@/lib/course-data"
+import { getStudentStats } from "@/lib/storage"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { EditAttendanceModal } from "./edit-attendance-modal"
@@ -26,6 +27,7 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
 }) => {
   const [showEditAttendance, setShowEditAttendance] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const stats = getStudentStats(student)
 
   const getStatusDisplay = (status: string | null) => {
     if (status === "H") return "حاضر"
@@ -55,17 +57,36 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-3xl shadow-lg max-h-[80vh] overflow-y-auto space-y-6">
+        <div className="bg-white rounded-2xl p-6 md:p-7 w-full max-w-3xl shadow-lg max-h-[80vh] overflow-y-auto space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold mb-1">سجل الحضور - {student.name}</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className="text-2xl font-bold mb-1">سجل الحضور - {student.name}</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 عرض ملف الحضور، الدورات المسجل بها، وأحدث الجلسات
               </p>
             </div>
             <Button type="button" variant="outline" onClick={onClose}>
               إغلاق
             </Button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl border border-border/60 bg-muted/40 p-4">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">عدد الدورات</p>
+              <p className="text-lg font-semibold text-foreground">{courseSummaries?.length || 0}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">نسبة الحضور الإجمالية</p>
+              <p className="text-lg font-semibold text-foreground">
+                {stats.presentPercentage}%
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">أحدث جلسة</p>
+              <p className="text-lg font-semibold text-foreground">
+                {Object.keys(student.attendance || {}).sort().slice(-1)[0] || "—"}
+              </p>
+            </div>
           </div>
 
           {courseSummaries && courseSummaries.length > 0 && (
@@ -119,7 +140,7 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
                     <div className="flex-1">
                       <p className="font-semibold">{date}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`inline-block px-2 py-1 rounded text-sm ${getStatusColor(record.status)}`}>
+                        <span className={`inline-block px-2.5 py-1 rounded text-sm ${getStatusColor(record.status)}`}>
                           {getStatusDisplay(record.status)}
                         </span>
                         {record.reason && <span className="text-xs text-gray-600">السبب: {record.reason}</span>}

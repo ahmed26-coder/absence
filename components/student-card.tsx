@@ -66,12 +66,12 @@ export const StudentCard: React.FC<StudentCardProps> = ({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="relative overflow-hidden rounded-2xl border border-border/60 bg-white/80 p-4 shadow-sm backdrop-blur transition-all hover:-translate-y-1 hover:shadow-lg"
+        className="relative overflow-hidden rounded-2xl border border-border/60 bg-white/85 p-6 shadow-sm backdrop-blur transition-all hover:-translate-y-1 hover:shadow-lg"
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-50/80 via-white to-amber-50/80" />
         <div className="relative flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <h3 className="font-extrabold text-lg text-foreground">{student.name}</h3>
+            <h3 className="font-extrabold text-xl text-foreground">{student.name}</h3>
             <div className="flex flex-wrap gap-1">
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${getStatusBgColor(
@@ -115,23 +115,23 @@ export const StudentCard: React.FC<StudentCardProps> = ({
           </div>
         </div>
 
-        <div className="relative mt-4 rounded-xl border border-border/60 bg-white/70 p-3">
-          <div className="grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground">
+        <div className="relative mt-5 rounded-xl border border-border/60 bg-white/70 p-4">
+          <div className="grid grid-cols-4 gap-3 text-xs font-semibold text-muted-foreground">
             <div className="text-center">
               <p className="text-[11px]">حاضر</p>
-              <p className="text-lg font-bold text-emerald-600">{stats.present}</p>
+              <p className="text-lg font-bold text-emerald-600 leading-tight">{stats.present}</p>
             </div>
             <div className="text-center">
               <p className="text-[11px]">غياب</p>
-              <p className="text-lg font-bold text-red-600">{stats.absent}</p>
+              <p className="text-lg font-bold text-red-600 leading-tight">{stats.absent}</p>
             </div>
             <div className="text-center">
               <p className="text-[11px]">عذر</p>
-              <p className="text-lg font-bold text-amber-600">{stats.excused}</p>
+              <p className="text-lg font-bold text-amber-600 leading-tight">{stats.excused}</p>
             </div>
             <div className="text-center">
               <p className="text-[11px]">نسبة الحضور</p>
-              <p className="text-lg font-bold text-indigo-700">{attendanceRate}%</p>
+              <p className="text-lg font-bold text-indigo-700 leading-tight">{attendanceRate}%</p>
             </div>
           </div>
           <div className="mt-3">
@@ -139,7 +139,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
           </div>
         </div>
 
-        <div className="relative mt-4 space-y-3">
+        <div className="relative mt-5 space-y-3">
           <AttendanceStatusButton
             status={record?.status || null}
             onStatusChange={(status, reason) => updateAttendance(student.id, selectedDate, status, reason)}

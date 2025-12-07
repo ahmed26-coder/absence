@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { motion } from "framer-motion"
-import { Users, Compass, Grid3x3, List, Search, Filter, NotebookPen, BarChart3 } from "lucide-react"
+import { Users, Compass, Grid3x3, List, Search, Filter, NotebookPen, BarChart3, Gauge } from "lucide-react"
 
 import { AttendanceProvider, useAttendance } from "@/components/attendance-context"
 import { AddStudentModal } from "@/components/add-student-modal"
@@ -189,37 +189,37 @@ const AttendanceContent = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-amber-50 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-amber-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-10">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
-          className="relative overflow-hidden rounded-3xl border border-border/60 bg-white/90 p-6 shadow-md backdrop-blur"
+          className="relative overflow-hidden rounded-3xl border border-border/60 bg-white/90 p-8 shadow-md backdrop-blur"
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.08),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(251,191,36,0.08),transparent_30%)]" />
           <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+            <div className="space-y-4 max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-700">
                 <Compass size={14} />
                 لوحة حضور الدورات
               </div>
-              <h1 className="text-3xl font-black text-foreground leading-tight">
+              <h1 className="text-3xl md:text-4xl font-black text-foreground leading-tight">
                 منصة عربية لمتابعة الحضور والغياب مع نظرة فورية على التزام الطلاب
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base text-muted-foreground leading-relaxed">
                 وصول سريع لقوائم الطلاب، الدورات، ونافذة إدخال الحضور اليومية. كل شيء باللغة العربية وبواجهة RTL واضحة.
               </p>
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary">
+                <span className="rounded-full bg-primary/10 px-4 py-1.5 font-semibold text-primary">
                   الطلاب المسجلون: {data.students.length}
                 </span>
-                <span className="rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-800">
+                <span className="rounded-full bg-amber-100 px-4 py-1.5 font-semibold text-amber-800">
                   جلسة اليوم: {selectedDate}
                 </span>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => setIsModalOpen(true)} size="lg" className="gap-2">
+                <Button onClick={() => setIsModalOpen(true)} size="lg" className="gap-2 px-6 py-2.5">
                   <Users size={18} />
                   إضافة طالب
                 </Button>
@@ -227,7 +227,7 @@ const AttendanceContent = () => {
                   variant="outline"
                   size="lg"
                   onClick={() => document.getElementById("courses")?.scrollIntoView({ behavior: "smooth" })}
-                  className="gap-2"
+                  className="gap-2 px-6 py-2.5"
                 >
                   <NotebookPen size={18} />
                   قائمة الدورات
@@ -235,9 +235,9 @@ const AttendanceContent = () => {
                 <ExportButton students={filteredStudents} startDate={startDate} endDate={endDate} />
               </div>
             </div>
-            <div className="w-full max-w-sm space-y-3">
+            <div className="w-full max-w-sm space-y-4">
               <label className="text-sm font-semibold text-foreground">بحث شامل</label>
-              <div className="flex items-center gap-2 rounded-xl border border-border bg-white/80 px-3 py-2 shadow-inner">
+              <div className="flex items-center gap-2 rounded-2xl border border-border bg-white/80 px-4 py-3 shadow-inner">
                 <Search size={16} className="text-muted-foreground" />
                 <Input
                   value={searchTerm}
@@ -246,19 +246,42 @@ const AttendanceContent = () => {
                     setCurrentPage(0)
                   }}
                   placeholder="ابحث عن طالب أو دورة"
-                  className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+                  className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 text-base"
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 استخدم البحث السريع للوصول إلى طالب محدد، أو انتقل مباشرة للدورة لمعالجة الحضور.
               </p>
             </div>
           </div>
         </motion.div>
 
-        <div className="rounded-2xl border border-border/60 bg-white/90 p-4 shadow-sm backdrop-blur">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {[
+            { title: "قائمة الدورات", icon: NotebookPen, target: "courses" },
+            { title: "قائمة الطلاب", icon: Users, target: "students" },
+            { title: "نظرة عامة على الإحصائيات", icon: Gauge, target: "analytics" },
+          ].map((item) => (
+            <button
+              key={item.title}
+              type="button"
+              onClick={() => document.getElementById(item.target)?.scrollIntoView({ behavior: "smooth" })}
+              className="group flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-white/90 px-5 py-4 text-start shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+            >
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                <p className="text-xs text-muted-foreground">انتقل سريعاً للعمل على هذه الشاشة</p>
+              </div>
+              <span className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+                <item.icon size={18} />
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div className="rounded-2xl border border-border/60 bg-white/90 p-6 shadow-sm backdrop-blur space-y-5">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-sm font-semibold text-foreground">تاريخ الجلسة الحالية</label>
               <Input
                 type="date"
@@ -269,7 +292,7 @@ const AttendanceContent = () => {
                 }}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-sm font-semibold text-foreground">تصفية حسب تسجيل تاريخ</label>
               <Input
                 type="date"
@@ -281,7 +304,7 @@ const AttendanceContent = () => {
                 placeholder="اختر تاريخ للتصفية"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-sm font-semibold text-foreground">حالة الحضور</label>
               <select
                 className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
@@ -297,7 +320,7 @@ const AttendanceContent = () => {
                 <option value="excused">عذر</option>
               </select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-sm font-semibold text-foreground">الدورة</label>
               <select
                 className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
@@ -317,7 +340,7 @@ const AttendanceContent = () => {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <DateRangeSelector
               startDate={startDate}
               endDate={endDate}
@@ -325,7 +348,7 @@ const AttendanceContent = () => {
               onEndDateChange={setEndDate}
             />
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+              <span className="inline-flex items-center gap-2 rounded-full bg-muted px-4 py-2 text-xs font-semibold text-muted-foreground">
                 <Filter size={14} />
                 {filteredStudents.length} نتائج
               </span>
@@ -349,9 +372,11 @@ const AttendanceContent = () => {
           </div>
         </div>
 
-        <StatisticsPanel students={filteredStudents} startDate={startDate} endDate={endDate} />
+        <div id="analytics">
+          <StatisticsPanel students={filteredStudents} startDate={startDate} endDate={endDate} />
+        </div>
 
-        <section id="students" className="space-y-4">
+        <section id="students" className="space-y-5">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-xl font-bold text-foreground">قائمة الطلاب</h2>
@@ -374,24 +399,15 @@ const AttendanceContent = () => {
             </div>
           </div>
 
-          <div
-            className={
-              viewMode === "card"
-                ? "grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
-                : "overflow-hidden rounded-2xl border border-border/60 bg-white/80 shadow-sm"
-            }
-          >
-            {paginatedStudents.map((student) =>
-              viewMode === "card" ? (
-                <StudentCard
-                  key={student.id}
-                  student={student}
-                  selectedDate={selectedDate}
-                  courseLabels={courseLabels}
-                  onNavigateToCourse={handleNavigateToCourse}
-                  courseSummaries={studentCourseSummaries[student.id]}
-                />
-              ) : (
+          {viewMode === "list" && (
+            <div className="overflow-hidden rounded-2xl border border-border/60 bg-white/80 shadow-sm">
+              <div className="hidden md:grid grid-cols-[1.5fr,1fr,1fr,1fr] items-center gap-4 border-b border-border/60 bg-muted/50 px-4 py-3 text-sm font-semibold text-muted-foreground">
+                <span>الطالب</span>
+                <span>الحالة اليوم</span>
+                <span>الدورات</span>
+                <span className="text-left">إجراءات</span>
+              </div>
+              {paginatedStudents.map((student) => (
                 <StudentListItem
                   key={student.id}
                   student={student}
@@ -400,9 +416,24 @@ const AttendanceContent = () => {
                   onNavigateToCourse={handleNavigateToCourse}
                   courseSummaries={studentCourseSummaries[student.id]}
                 />
-              ),
-            )}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {viewMode === "card" && (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {paginatedStudents.map((student) => (
+                <StudentCard
+                  key={student.id}
+                  student={student}
+                  selectedDate={selectedDate}
+                  courseLabels={courseLabels}
+                  onNavigateToCourse={handleNavigateToCourse}
+                  courseSummaries={studentCourseSummaries[student.id]}
+                />
+              ))}
+            </div>
+          )}
 
           {filteredStudents.length === 0 && (
             <div className="rounded-2xl border border-dashed border-border/70 bg-white/70 p-8 text-center text-muted-foreground">
@@ -443,17 +474,35 @@ const AttendanceContent = () => {
         </section>
 
         <section id="courses" className="space-y-4">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-xl font-bold text-foreground">لوحة الدورات</h2>
               <p className="text-sm text-muted-foreground">
                 اختر دورة لمراجعة الحضور، إضافة أعذار، وتصفيتها حسب الطالب أو التاريخ.
               </p>
             </div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-              <BarChart3 size={14} />
-              {courses.length} دورات مفعّلة
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full bg-muted px-4 py-2 text-xs font-semibold text-muted-foreground">
+                <BarChart3 size={14} />
+                {courses.length} دورات مفعّلة
+              </span>
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-2"
+                onClick={() => setCourseDate(new Date().toISOString().split("T")[0])}
+              >
+                تسجيل حضور اليوم
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => document.getElementById("students")?.scrollIntoView({ behavior: "smooth" })}
+              >
+                تعديل الحضور
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">

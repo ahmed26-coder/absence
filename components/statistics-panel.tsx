@@ -91,7 +91,7 @@ export const StatisticsPanel: React.FC<StatisticsPanelProps> = ({ students, star
   ]
 
   return (
-    <div className="space-y-4 mb-6">
+    <div className="space-y-6 mb-8">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card, index) => (
           <motion.div
@@ -99,12 +99,12 @@ export const StatisticsPanel: React.FC<StatisticsPanelProps> = ({ students, star
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05, duration: 0.35, ease: "easeOut" }}
-            className="group relative overflow-hidden rounded-2xl border border-border/60 bg-white/70 p-4 shadow-sm backdrop-blur"
+            className="group relative overflow-hidden rounded-2xl border border-border/60 bg-white/70 p-5 shadow-sm backdrop-blur"
           >
             <div
               className={`absolute inset-0 bg-gradient-to-br ${card.tone} opacity-60 group-hover:opacity-80 transition-opacity`}
             />
-            <div className="relative flex items-start justify-between gap-2">
+            <div className="relative flex items-start justify-between gap-3">
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground font-medium">{card.title}</p>
                 <p className="text-2xl font-extrabold text-foreground tracking-tight">{card.value}</p>
@@ -124,12 +124,12 @@ export const StatisticsPanel: React.FC<StatisticsPanelProps> = ({ students, star
         ))}
       </div>
 
-      <div className="rounded-2xl border border-border/60 bg-white/80 p-4 shadow-sm backdrop-blur">
-        <div className="flex items-center justify-between mb-3">
+      <div className="rounded-2xl border border-border/60 bg-white/80 p-5 shadow-sm backdrop-blur">
+        <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-foreground">الاتجاه خلال الأيام الأخيرة</h3>
           <span className="text-xs text-muted-foreground">تفاعل سريع لحضور الجلسات</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           {trend.map((session) => {
             const totalForDay = session.present + session.absent + session.excused || 1
             const dailyRate = Math.round((session.present / totalForDay) * 100)
