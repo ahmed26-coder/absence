@@ -89,6 +89,29 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
             </div>
           </div>
 
+          {(student.phone || student.email || student.notes) && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl border border-border/60 bg-white/70 p-4">
+              {student.phone && (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">الهاتف</p>
+                  <p className="text-sm font-semibold text-foreground">{student.phone}</p>
+                </div>
+              )}
+              {student.email && (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">البريد الإلكتروني</p>
+                  <p className="text-sm font-semibold text-foreground break-words">{student.email}</p>
+                </div>
+              )}
+              {student.notes && (
+                <div className="space-y-1 sm:col-span-3">
+                  <p className="text-xs text-muted-foreground">ملاحظات</p>
+                  <p className="text-sm text-foreground leading-relaxed">{student.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {courseSummaries && courseSummaries.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-foreground">الدورات الملتحق بها</h3>

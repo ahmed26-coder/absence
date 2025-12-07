@@ -1,11 +1,20 @@
 import type { Metadata } from "next"
-import { Cairo } from "next/font/google"
+import { Cairo, Noto_Naskh_Arabic } from "next/font/google"
 import "./globals.css"
+import { Navbar } from "@/components/navbar"
+import { ToastProvider } from "@/components/ui/toast-provider"
 
 const cairo = Cairo({
   variable: "--font-base",
   subsets: ["arabic", "latin"],
   weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+})
+
+const naskh = Noto_Naskh_Arabic({
+  variable: "--font-heading",
+  subsets: ["arabic"],
+  weight: ["600", "700"],
   display: "swap",
 })
 
@@ -23,8 +32,11 @@ export default function RootLayout({
 }>) {
   return (
     <html dir="rtl" lang="ar">
-      <body className={`${cairo.variable} antialiased`}>
-        {children}
+      <body className={`${cairo.variable} ${naskh.variable} antialiased`}>
+        <ToastProvider>
+          <Navbar />
+          <main className="pt-20 md:pt-24">{children}</main>
+        </ToastProvider>
       </body>
     </html>
   )

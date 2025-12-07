@@ -16,6 +16,8 @@ export interface CourseOverview extends Course {
   studentIds: string[]
   trend: Array<{ date: string; present: number; absent: number; excused: number }>
   averageAttendance: number
+  description?: string
+  notes?: string
 }
 
 export interface StudentCourseSummary {

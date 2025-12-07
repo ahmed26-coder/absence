@@ -122,17 +122,29 @@
   }
   h1 {
     @apply text-3xl md:text-4xl font-extrabold leading-snug tracking-tight;
+    font-family: var(--font-heading), var(--font-base), system-ui, sans-serif;
   }
   h2 {
     @apply text-2xl font-bold leading-snug tracking-tight;
+    font-family: var(--font-heading), var(--font-base), system-ui, sans-serif;
   }
   h3 {
     @apply text-xl font-semibold leading-snug;
+    font-family: var(--font-heading), var(--font-base), system-ui, sans-serif;
   }
   label, .form-label {
     @apply text-sm font-semibold tracking-wide;
   }
   p, span, li {
     @apply leading-relaxed;
+  }
+}
+
+@layer utilities {
+  .font-heading {
+    font-family: var(--font-heading), var(--font-base), system-ui, sans-serif;
+  }
+  .font-body {
+    font-family: var(--font-base), system-ui, sans-serif;
   }
 }

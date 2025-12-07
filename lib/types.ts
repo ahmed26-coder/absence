@@ -11,6 +11,9 @@ export interface Student {
   name: string
   attendance: Record<string, AttendanceRecord>
   courses?: string[]
+  phone?: string
+  email?: string
+  notes?: string
 }
 
 export interface AttendanceData {

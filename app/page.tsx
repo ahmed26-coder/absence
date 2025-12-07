@@ -15,6 +15,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AttendanceStatusButton } from "@/components/attendance-status-button"
 import { buildCourseData, type CourseOverview, type StudentWithCourses } from "@/lib/course-data"
+import { CoursesTable } from "@/components/courses-table"
+import { CourseForm } from "@/components/course-form"
+import { StudentsTable } from "@/components/students-table"
+import { StudentForm } from "@/components/student-form"
+import { Dialog } from "@/components/ui/dialog"
+import { useToast } from "@/components/ui/toast-provider"
+import type { Student } from "@/lib/types"
+import { DeleteConfirmModal } from "@/components/delete-confirm-modal"
+import { StudentDetailsModal } from "@/components/student-details-modal"
 
 const CourseCard = ({
   course,
@@ -77,8 +86,14 @@ const CourseCard = ({
 }
 
 const AttendanceContent = () => {
-  const { data, isLoading, updateAttendance } = useAttendance()
+  const { data, isLoading, updateAttendance, deleteStudent, addStudent, updateStudent } = useAttendance()
+  const { pushToast } = useToast()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [showCourseForm, setShowCourseForm] = useState(false)
+  const [editingCourse, setEditingCourse] = useState<CourseOverview | null>(null)
+  const [showStudentForm, setShowStudentForm] = useState(false)
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null)
+  const [profileStudent, setProfileStudent] = useState<Student | null>(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
   const [startDate, setStartDate] = useState(() => {
     const date = new Date()
@@ -101,6 +116,8 @@ const AttendanceContent = () => {
   const [courseStudentSearch, setCourseStudentSearch] = useState("")
   const [courseStatusFilter, setCourseStatusFilter] = useState<"all" | "present" | "absent" | "excused">("all")
   const [courseDate, setCourseDate] = useState(new Date().toISOString().split("T")[0])
+  const [courseToDelete, setCourseToDelete] = useState<CourseOverview | null>(null)
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null)
   const itemsPerPage = 12
 
   useEffect(() => {
@@ -109,24 +126,31 @@ const AttendanceContent = () => {
     }
   }, [viewMode])
 
-  const { courses, studentsWithCourses, studentCourseSummaries } = useMemo(
+  const { courses: initialCourses, studentsWithCourses, studentCourseSummaries, sessionDates } = useMemo(
     () => buildCourseData(data.students),
     [data.students],
   )
 
+  const [courseList, setCourseList] = useState<CourseOverview[]>(initialCourses)
+  const [studentMeta, setStudentMeta] = useState<Record<string, { phone?: string; email?: string; notes?: string; courseIds?: string[] }>>({})
+
   useEffect(() => {
-    if (!activeCourseId && courses[0]) {
-      setActiveCourseId(courses[0].id)
-    }
-  }, [courses, activeCourseId])
+    setCourseList(initialCourses)
+  }, [initialCourses])
 
   useEffect(() => {
     setCourseDate(selectedDate)
   }, [selectedDate])
 
+  useEffect(() => {
+    if (!activeCourseId && courseList[0]) {
+      setActiveCourseId(courseList[0].id)
+    }
+  }, [courseList, activeCourseId])
+
   const courseLabels = useMemo(
-    () => courses.reduce<Record<string, string>>((acc, course) => ({ ...acc, [course.id]: course.name }), {}),
-    [courses],
+    () => courseList.reduce<Record<string, string>>((acc, course) => ({ ...acc, [course.id]: course.name }), {}),
+    [courseList],
   )
 
   const filteredStudents = useMemo(() => {
@@ -157,7 +181,7 @@ const AttendanceContent = () => {
 
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage))
 
-  const activeCourse = courses.find((course) => course.id === activeCourseId)
+  const activeCourse = courseList.find((course) => course.id === activeCourseId)
 
   const courseStudents = useMemo(
     () =>
@@ -188,8 +212,116 @@ const AttendanceContent = () => {
     section?.scrollIntoView({ behavior: "smooth" })
   }
 
+  const studentLookup = useMemo(
+    () =>
+      studentsWithCourses.reduce<Record<string, Student>>((acc, student) => {
+        const meta = studentMeta[student.id] || {}
+        acc[student.id] = { ...student, ...meta }
+        return acc
+      }, {}),
+    [studentsWithCourses, studentMeta],
+  )
+
+  const handleViewStudent = (studentId: string) => {
+    const s = studentLookup[studentId]
+    if (s) {
+      setProfileStudent(s)
+      document.getElementById("students")?.scrollIntoView({ behavior: "smooth" })
+    }
+  }
+
+  const handleEditStudent = (studentId: string) => {
+    setEditingStudentId(studentId)
+    setShowStudentForm(true)
+  }
+
+  const handleDeleteStudentTrigger = (studentId: string) => {
+    const s = studentLookup[studentId]
+    if (s) setStudentToDelete(s)
+  }
+
+  const handleCourseSubmit = (course: CourseOverview & { description?: string; notes?: string }) => {
+    const exists = courseList.some((c) => c.id === course.id)
+    const fallbackTrend = sessionDates.map((date) => ({ date, present: 0, absent: 0, excused: 0 }))
+    const normalizedTrend = course.trend?.length ? course.trend : fallbackTrend
+    setCourseList((prev) => {
+      if (exists) {
+        return prev.map((c) => (c.id === course.id ? { ...c, ...course, trend: normalizedTrend } : c))
+      }
+      return [...prev, { ...course, trend: normalizedTrend, studentIds: course.studentIds || [], averageAttendance: course.averageAttendance || 0 }]
+    })
+    pushToast(exists ? "تم تحديث بيانات الدورة" : "تمت إضافة الدورة", "success")
+    setShowCourseForm(false)
+    setEditingCourse(null)
+  }
+
+  const confirmDeleteCourse = () => {
+    if (!courseToDelete) return
+    setCourseList((prev) => {
+      const next = prev.filter((c) => c.id !== courseToDelete.id)
+      if (activeCourseId === courseToDelete.id) {
+        setActiveCourseId(next[0]?.id || null)
+      }
+      return next
+    })
+    pushToast("تم حذف الدورة", "success")
+    setCourseToDelete(null)
+  }
+
+  const handleStudentSubmit = async (payload: {
+    name: string
+    phone?: string
+    email?: string
+    notes?: string
+    courseIds?: string[]
+    id?: string
+  }) => {
+    if (payload.id) {
+      await updateStudent(payload.id, payload.name)
+      setStudentMeta((prev) => ({
+        ...prev,
+        [payload.id as string]: {
+          phone: payload.phone,
+          email: payload.email,
+          notes: payload.notes,
+          courseIds: payload.courseIds,
+        },
+      }))
+      pushToast("تم تحديث بيانات الطالب", "success")
+    } else {
+      const created = await addStudent(payload.name)
+      if (created) {
+        setStudentMeta((prev) => ({
+          ...prev,
+          [created.id]: {
+            phone: payload.phone,
+            email: payload.email,
+            notes: payload.notes,
+            courseIds: payload.courseIds,
+          },
+        }))
+        pushToast("تمت إضافة الطالب", "success")
+      } else {
+        pushToast("تعذّر إضافة الطالب", "error")
+      }
+    }
+    setShowStudentForm(false)
+    setEditingStudentId(null)
+  }
+
+  const confirmDeleteStudent = async () => {
+    if (!studentToDelete) return
+    await deleteStudent(studentToDelete.id)
+    pushToast("تم حذف الطالب", "success")
+    setStudentToDelete(null)
+  }
+
+  const editingStudent = editingStudentId ? studentLookup[editingStudentId] : undefined
+  const editingStudentMeta = editingStudentId ? studentMeta[editingStudentId] : undefined
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-amber-50 p-4 md:p-8">
+      <div id="top" className="absolute -top-20" aria-hidden />
       <div className="max-w-7xl mx-auto space-y-10">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -331,7 +463,7 @@ const AttendanceContent = () => {
                 }}
               >
                 <option value="all">كل الدورات</option>
-                {courses.map((course) => (
+                {courseList.map((course) => (
                   <option key={course.id} value={course.id}>
                     {course.name}
                   </option>
@@ -384,20 +516,24 @@ const AttendanceContent = () => {
                 تصفية بالاسم، الحالة، أو الدورة، مع تحديث فوري لسجلات الحضور.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={() => setIsModalOpen(true)} className="gap-1">
-                <Users size={14} />
-                طالب جديد
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => document.getElementById("courses")?.scrollIntoView({ behavior: "smooth" })}
-              >
-                الذهاب للدورات
-              </Button>
-            </div>
           </div>
+
+          <StudentsTable
+            students={studentsWithCourses}
+            studentCourseSummaries={studentCourseSummaries}
+            onView={handleViewStudent}
+            onEdit={handleEditStudent}
+            onDelete={handleDeleteStudentTrigger}
+            onAddNew={() => {
+              setEditingStudentId(null)
+              setShowStudentForm(true)
+            }}
+            search={searchTerm}
+            onSearchChange={(value) => {
+              setSearchTerm(value)
+              setCurrentPage(0)
+            }}
+          />
 
           {viewMode === "list" && (
             <div className="overflow-hidden rounded-2xl border border-border/60 bg-white/80 shadow-sm">
@@ -484,7 +620,7 @@ const AttendanceContent = () => {
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full bg-muted px-4 py-2 text-xs font-semibold text-muted-foreground">
                 <BarChart3 size={14} />
-                {courses.length} دورات مفعّلة
+                {courseList.length} دورات مفعّلة
               </span>
               <Button
                 variant="default"
@@ -505,9 +641,28 @@ const AttendanceContent = () => {
             </div>
           </div>
 
+          <CoursesTable
+            courses={courseList}
+            onView={setActiveCourseId}
+            onEdit={(course) => {
+              setEditingCourse(course)
+              setShowCourseForm(true)
+            }}
+            onDelete={(course) => setCourseToDelete(course)}
+            onAddNew={() => {
+              setEditingCourse(null)
+              setShowCourseForm(true)
+            }}
+          />
+
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {courses.map((course) => (
-              <CourseCard key={course.id} course={course} onSelect={setActiveCourseId} isActive={course.id === activeCourseId} />
+            {courseList.map((course) => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                onSelect={setActiveCourseId}
+                isActive={course.id === activeCourseId}
+              />
             ))}
           </div>
 
@@ -581,7 +736,64 @@ const AttendanceContent = () => {
         </section>
       </div>
 
+      <CourseForm
+        open={showCourseForm}
+        onClose={() => {
+          setShowCourseForm(false)
+          setEditingCourse(null)
+        }}
+        onSubmit={handleCourseSubmit}
+        initialData={editingCourse || undefined}
+      />
+
+      <StudentForm
+        open={showStudentForm}
+        onClose={() => {
+          setShowStudentForm(false)
+          setEditingStudentId(null)
+        }}
+        onSubmit={handleStudentSubmit}
+        initialData={editingStudent}
+        initialMeta={editingStudentMeta}
+        courses={courseList}
+      />
+
       <AddStudentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
+      {courseToDelete && (
+        <Dialog open={!!courseToDelete} onClose={() => setCourseToDelete(null)} title="تأكيد حذف الدورة">
+          <p className="text-sm text-muted-foreground mb-4">
+            هل أنت متأكد من حذف الدورة <span className="font-semibold text-foreground">{courseToDelete.name}</span>؟
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setCourseToDelete(null)}>
+              إلغاء
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteCourse}>
+              حذف
+            </Button>
+          </div>
+        </Dialog>
+      )}
+
+      {studentToDelete && (
+        <DeleteConfirmModal
+          isOpen={!!studentToDelete}
+          studentName={studentToDelete.name}
+          onConfirm={confirmDeleteStudent}
+          onCancel={() => setStudentToDelete(null)}
+        />
+      )}
+
+      {profileStudent && (
+        <StudentDetailsModal
+          isOpen={!!profileStudent}
+          student={profileStudent}
+          courseSummaries={studentCourseSummaries[profileStudent.id]}
+          onNavigateToCourse={handleNavigateToCourse}
+          onClose={() => setProfileStudent(null)}
+        />
+      )}
 
       {isLoading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">

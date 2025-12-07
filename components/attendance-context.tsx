@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useCallback, useEffect } from "react"
-import type { AttendanceData } from "@/lib/types"
+import type { AttendanceData, Student } from "@/lib/types"
 import {
   getStorageData,
   addStudentToSupabase,
@@ -13,7 +13,7 @@ import {
 
 interface AttendanceContextType {
   data: AttendanceData
-  addStudent: (name: string) => void
+  addStudent: (name: string) => Promise<Student | null>
   deleteStudent: (studentId: string) => void
   updateAttendance: (studentId: string, date: string, status: string | null, reason?: string) => void
   updateStudent: (studentId: string, name: string) => void
@@ -59,10 +59,12 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     async (name: string) => {
       try {
         setIsLoading(true)
-        await addStudentToSupabase(name)
+        const created = await addStudentToSupabase(name)
         await refreshData()
+        return created
       } catch (error) {
         console.error("[v0] Error adding student:", error)
+        return null
       } finally {
         setIsLoading(false)
       }
