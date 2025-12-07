@@ -6,9 +6,7 @@ import { motion } from "framer-motion"
 import { Users, Compass, Grid3x3, List, Search, Filter, NotebookPen, BarChart3, Gauge } from "lucide-react"
 
 import { AttendanceProvider, useAttendance } from "@/components/attendance-context"
-import { AddStudentModal } from "@/components/add-student-modal"
 import { StudentCard } from "@/components/student-card"
-import { StudentListItem } from "@/components/student-list-item"
 import { DateRangeSelector } from "@/components/date-range-selector"
 import { StatisticsPanel } from "@/components/statistics-panel"
 import { ExportButton } from "@/components/export-button"
@@ -25,6 +23,8 @@ import { useToast } from "@/components/ui/toast-provider"
 import type { Student } from "@/lib/types"
 import { DeleteConfirmModal } from "@/components/delete-confirm-modal"
 import { StudentDetailsModal } from "@/components/student-details-modal"
+
+const DEFAULT_SHEIKH = "الشيخ عمرو بن أبي الفتوح"
 
 const CourseCard = ({
   course,
@@ -50,7 +50,7 @@ const CourseCard = ({
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">{course.schedule}</p>
           <p className="text-base font-bold text-foreground">{course.name}</p>
-          <p className="text-xs text-muted-foreground">المشرف: {course.instructor}</p>
+          <p className="text-xs text-muted-foreground">الشيخ: {course.instructor || DEFAULT_SHEIKH}</p>
         </div>
         <div className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">{course.level}</div>
       </div>
@@ -90,7 +90,6 @@ const CoursesContent = () => {
   const { data, isLoading, updateAttendance, deleteStudent, addStudent, updateStudent, addCourse, updateCourse, deleteCourse } =
     useAttendance()
   const { pushToast } = useToast()
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [showCourseForm, setShowCourseForm] = useState(false)
   const [editingCourse, setEditingCourse] = useState<CourseOverview | null>(null)
   const [showStudentForm, setShowStudentForm] = useState(false)
@@ -129,10 +128,10 @@ const CoursesContent = () => {
     }
   }, [viewMode])
 
-  const courses = useMemo(() => data.courses || [], [data.courses])
-  const { studentsWithCourses, studentCourseSummaries, sessionDates } = useMemo(
-    () => buildCourseData(data.students, courses as CourseOverview[]),
-    [data.students, courses],
+  const baseCourses = useMemo(() => data.courses || [], [data.courses])
+  const { courses, studentsWithCourses, studentCourseSummaries, sessionDates } = useMemo(
+    () => buildCourseData(data.students, baseCourses),
+    [data.students, baseCourses],
   )
   const [studentMeta, setStudentMeta] = useState<
     Record<
@@ -248,13 +247,17 @@ const CoursesContent = () => {
 
   const handleCourseSubmit = (course: CourseOverview & { description?: string; notes?: string }) => {
     const exists = courses.some((c) => c.id === course.id)
-    const fallbackTrend = sessionDates.map((date) => ({ date, present: 0, absent: 0, excused: 0 }))
-    const normalizedTrend = course.trend?.length ? course.trend : fallbackTrend
     const payload = {
-      ...course,
-      trend: normalizedTrend,
-      studentIds: course.studentIds || [],
-      averageAttendance: course.averageAttendance || 0,
+      id: course.id,
+      name: course.name,
+      instructor: course.instructor || DEFAULT_SHEIKH,
+      schedule: course.schedule || "—",
+      level: course.level || "—",
+      focus: course.focus || "—",
+      location: course.location || "—",
+      color: course.color || "emerald",
+      description: course.description,
+      notes: course.notes,
     }
     const action = exists ? updateCourse(course.id, payload) : addCourse(payload)
     action
@@ -393,9 +396,16 @@ const CoursesContent = () => {
                 </span>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => setIsModalOpen(true)} size="lg" className="gap-2 px-6 py-2.5">
-                  <Users size={18} />
-                  إضافة طالب
+                <Button
+                  onClick={() => {
+                    setEditingCourse(null)
+                    setShowCourseForm(true)
+                  }}
+                  size="lg"
+                  className="gap-2 px-6 py-2.5"
+                >
+                  <NotebookPen size={18} />
+                  إضافة دورة
                 </Button>
                 <ExportButton students={filteredStudents} startDate={startDate} endDate={endDate} />
               </div>
@@ -551,42 +561,24 @@ const CoursesContent = () => {
             </div>
           </div>
 
-          <StudentsTable
-            students={studentsWithCourses}
-            studentCourseSummaries={studentCourseSummaries}
-            onView={handleViewStudent}
-            onEdit={handleEditStudent}
-            onDelete={handleDeleteStudentTrigger}
-            onAddNew={() => {
-              setEditingStudentId(null)
-              setShowStudentForm(true)
-            }}
-            search={searchTerm}
-            onSearchChange={(value) => {
-              setSearchTerm(value)
-              setCurrentPage(0)
-            }}
-          />
-
           {viewMode === "list" && (
-            <div className="overflow-hidden rounded-2xl border border-border/60 bg-white/80 shadow-sm">
-              <div className="hidden md:grid grid-cols-[1.5fr,1fr,1fr,1fr] items-center gap-4 border-b border-border/60 bg-muted/50 px-4 py-3 text-sm font-semibold text-muted-foreground">
-                <span>الطالب</span>
-                <span>الحالة اليوم</span>
-                <span>الدورات</span>
-                <span className="text-left">إجراءات</span>
-              </div>
-              {paginatedStudents.map((student) => (
-                <StudentListItem
-                  key={student.id}
-                  student={student}
-                  selectedDate={selectedDate}
-                  courseLabels={courseLabels}
-                  onNavigateToCourse={handleNavigateToCourse}
-                  courseSummaries={studentCourseSummaries[student.id]}
-                />
-              ))}
-            </div>
+            <StudentsTable
+              students={paginatedStudents}
+              studentCourseSummaries={studentCourseSummaries}
+              onView={handleViewStudent}
+              onEdit={handleEditStudent}
+              onDelete={handleDeleteStudentTrigger}
+              onAddNew={() => {
+                setEditingStudentId(null)
+                setShowStudentForm(true)
+              }}
+              search={searchTerm}
+              onSearchChange={(value) => {
+                setSearchTerm(value)
+                setCurrentPage(0)
+              }}
+              showToolbar={false}
+            />
           )}
 
           {viewMode === "card" && (
@@ -702,12 +694,12 @@ const CoursesContent = () => {
           {activeCourse && (
             <div className="rounded-2xl border border-border/60 bg-white/90 p-5 shadow-sm backdrop-blur">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-foreground">{activeCourse.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {activeCourse.schedule} • {activeCourse.location} • بإشراف {activeCourse.instructor}
-                  </p>
-                  <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-foreground">{activeCourse.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {activeCourse.schedule} • {activeCourse.location} • الشيخ {activeCourse.instructor || DEFAULT_SHEIKH}
+                </p>
+                <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
                     <span className="rounded-full bg-emerald-100 px-2 py-1 font-semibold text-emerald-700">
                       الطلاب: {activeCourse.studentIds.length}
                     </span>
@@ -793,8 +785,6 @@ const CoursesContent = () => {
         courses={courses}
       />
 
-      <AddStudentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-
       {courseToDelete && (
         <Dialog open={!!courseToDelete} onClose={() => setCourseToDelete(null)} title="تأكيد حذف الدورة">
           <p className="text-sm text-muted-foreground mb-4">
@@ -835,7 +825,7 @@ const CoursesContent = () => {
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">{activeCourse.description || "لا يوجد وصف"}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-              <p>المدرب: {activeCourse.instructor || "—"}</p>
+              <p>الشيخ: {activeCourse.instructor || DEFAULT_SHEIKH}</p>
               <p>الجدول: {activeCourse.schedule || "—"}</p>
               <p>المستوى: {activeCourse.level || "—"}</p>
               <p>الموقع: {activeCourse.location || "—"}</p>

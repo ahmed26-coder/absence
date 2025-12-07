@@ -4,17 +4,17 @@ const STORAGE_KEY = "attendance_data";
 
 export const getStorageData = (): AttendanceData => {
   if (typeof window === "undefined")
-    return { students: [], lastUpdated: new Date().toISOString() };
+    return { students: [], courses: [], lastUpdated: new Date().toISOString() };
 
   const data = localStorage.getItem(STORAGE_KEY);
   if (!data) {
-    return { students: [], lastUpdated: new Date().toISOString() };
+    return { students: [], courses: [], lastUpdated: new Date().toISOString() };
   }
 
   try {
     return JSON.parse(data);
   } catch {
-    return { students: [], lastUpdated: new Date().toISOString() };
+    return { students: [], courses: [], lastUpdated: new Date().toISOString() };
   }
 };
 

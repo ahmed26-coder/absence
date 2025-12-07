@@ -28,9 +28,11 @@ const recentDates = (count: number) => {
   }).sort()
 }
 
+type BaseCourse = Course | CourseOverview
+
 export const buildCourseData = (
   students: Student[],
-  existingCourses?: CourseOverview[],
+  existingCourses?: BaseCourse[],
 ): {
   courses: CourseOverview[]
   studentsWithCourses: StudentWithCourses[]
@@ -39,7 +41,7 @@ export const buildCourseData = (
   studentCourseSummaries: Record<string, StudentCourseSummary[]>
 } => {
   const sessionDates = recentDates(6)
-  const storedCourses = existingCourses && existingCourses.length > 0 ? existingCourses : getStoredCourses()
+  const storedCourses: BaseCourse[] = existingCourses && existingCourses.length > 0 ? existingCourses : getStoredCourses()
   const courses: CourseOverview[] = storedCourses.map((course) => {
     const assignedStudents = students.filter((student) => student.courses?.includes(course.id))
 

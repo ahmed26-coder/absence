@@ -7,7 +7,6 @@ import Link from "next/link"
 
 import { AttendanceProvider, useAttendance } from "@/components/attendance-context"
 import { StudentCard } from "@/components/student-card"
-import { StudentListItem } from "@/components/student-list-item"
 import { StatisticsPanel } from "@/components/statistics-panel"
 import { DateRangeSelector } from "@/components/date-range-selector"
 import { Button } from "@/components/ui/button"
@@ -52,10 +51,10 @@ const StudentsContent = () => {
     >
   >({})
 
-  const courses = useMemo(() => coursesFromCtx || [], [coursesFromCtx])
-  const { studentsWithCourses, studentCourseSummaries } = useMemo(
-    () => buildCourseData(data.students, courses),
-    [data.students, courses],
+  const baseCourses = useMemo(() => coursesFromCtx || [], [coursesFromCtx])
+  const { courses, studentsWithCourses, studentCourseSummaries } = useMemo(
+    () => buildCourseData(data.students, baseCourses),
+    [data.students, baseCourses],
   )
 
   const courseLabels = useMemo(
@@ -278,7 +277,7 @@ const StudentsContent = () => {
                 }}
               >
                 <option value="all">كل الدورات</option>
-                {courses.map((course: CourseOverview) => (
+                {courses.map((course) => (
                   <option key={course.id} value={course.id}>
                     {course.name}
                   </option>
@@ -331,51 +330,33 @@ const StudentsContent = () => {
 
         <StatisticsPanel students={filteredStudents} startDate={startDate} endDate={endDate} />
 
-        <StudentsTable
-          students={studentsWithCourses}
-          studentCourseSummaries={studentCourseSummaries}
-          onView={(id) => {
-            const s = studentLookup[id]
-            if (s) setProfileStudent(s)
-          }}
-          onEdit={(id) => {
-            setEditingStudentId(id)
-            setShowStudentForm(true)
-          }}
-          onDelete={(id) => {
-            const s = studentLookup[id]
-            if (s) setStudentToDelete(s)
-          }}
-          onAddNew={() => {
-            setEditingStudentId(null)
-            setShowStudentForm(true)
-          }}
-          search={searchTerm}
-          onSearchChange={(value) => {
-            setSearchTerm(value)
-            setCurrentPage(0)
-          }}
-        />
-
         {viewMode === "list" && (
-          <div className="overflow-hidden rounded-2xl border border-border/60 bg-white/80 shadow-sm">
-            <div className="hidden md:grid grid-cols-[1.5fr,1fr,1fr,1fr] items-center gap-4 border-b border-border/60 bg-muted/50 px-4 py-3 text-sm font-semibold text-muted-foreground">
-              <span>الطالب</span>
-              <span>الحالة اليوم</span>
-              <span>الدورات</span>
-              <span className="text-left">إجراءات</span>
-            </div>
-            {paginatedStudents.map((student) => (
-              <StudentListItem
-                key={student.id}
-                student={student}
-                selectedDate={selectedDate}
-                courseLabels={courseLabels}
-                onNavigateToCourse={() => {}}
-                courseSummaries={studentCourseSummaries[student.id]}
-              />
-            ))}
-          </div>
+          <StudentsTable
+            students={paginatedStudents}
+            studentCourseSummaries={studentCourseSummaries}
+            onView={(id) => {
+              const s = studentLookup[id]
+              if (s) setProfileStudent(s)
+            }}
+            onEdit={(id) => {
+              setEditingStudentId(id)
+              setShowStudentForm(true)
+            }}
+            onDelete={(id) => {
+              const s = studentLookup[id]
+              if (s) setStudentToDelete(s)
+            }}
+            onAddNew={() => {
+              setEditingStudentId(null)
+              setShowStudentForm(true)
+            }}
+            search={searchTerm}
+            onSearchChange={(value) => {
+              setSearchTerm(value)
+              setCurrentPage(0)
+            }}
+            showToolbar={false}
+          />
         )}
 
         {viewMode === "card" && (

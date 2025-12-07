@@ -17,6 +17,7 @@ interface StudentsTableProps {
   onAddNew: () => void
   search: string
   onSearchChange: (value: string) => void
+  showToolbar?: boolean
 }
 
 export const StudentsTable: React.FC<StudentsTableProps> = ({
@@ -28,6 +29,7 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
   onAddNew,
   search,
   onSearchChange,
+  showToolbar = true,
 }) => {
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -36,23 +38,25 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
 
   return (
     <div className="space-y-3 rounded-2xl border border-border/60 bg-white/85 p-5 shadow-sm backdrop-blur">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <h3 className="text-lg font-bold">قائمة الطلاب</h3>
-          <p className="text-sm text-muted-foreground">إدارة بيانات الطلاب وتوزيعهم على الدورات.</p>
-        </div>
-        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 shadow-inner">
-            <Input
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="ابحث عن طالب..."
-              className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 text-sm"
-            />
+      {showToolbar && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold">قائمة الطلاب</h3>
+            <p className="text-sm text-muted-foreground">إدارة بيانات الطلاب وتوزيعهم على الدورات.</p>
           </div>
-          <Button onClick={onAddNew}>إضافة طالب جديد</Button>
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 shadow-inner">
+              <Input
+                value={search}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="ابحث عن طالب..."
+                className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 text-sm"
+              />
+            </div>
+            <Button onClick={onAddNew}>إضافة طالب جديد</Button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="overflow-hidden rounded-xl border border-border/60">
         <div className="hidden grid-cols-[1.8fr,1fr,1fr,1fr,1fr] items-center gap-4 border-b border-border/60 bg-muted/50 px-4 py-3 text-sm font-semibold text-muted-foreground md:grid">

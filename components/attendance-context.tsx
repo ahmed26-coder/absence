@@ -63,7 +63,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [])
 
   const addStudent = useCallback(
-    async (payload) => {
+    async (payload: Pick<Student, "name"> & Partial<Student> & { courses: string[] }) => {
       try {
         setIsLoading(true)
         const created = await addStudentToSupabase(payload)
@@ -111,7 +111,10 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   )
 
   const updateStudent = useCallback(
-    async (studentId: string, updates) => {
+    async (
+      studentId: string,
+      updates: Partial<Omit<Student, "id" | "attendance">> & { courses?: string[] },
+    ) => {
       try {
         setIsLoading(true)
         await updateStudentInSupabase(studentId, updates)

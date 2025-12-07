@@ -1,12 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type { Student, AttendanceStatus } from "@/lib/types"
 import { useAttendance } from "./attendance-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { getStudentStats } from "@/lib/storage"
+import { Dialog } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { useToast } from "@/components/ui/toast-provider"
 
 interface EditStudentModalProps {
   isOpen: boolean
@@ -15,69 +18,155 @@ interface EditStudentModalProps {
 }
 
 export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, student, onClose }) => {
-  const [name, setName] = useState(student.name)
-  const today = new Date().toISOString().split("T")[0] // yyyy-mm-dd
+  const today = useMemo(() => new Date().toISOString().split("T")[0], [])
   const currentAttendance = student.attendance?.[today] || { status: "", reason: "" }
+
+  const [name, setName] = useState(student.name)
+  const [age, setAge] = useState<string>(student.age ? String(student.age) : "")
+  const [phone, setPhone] = useState(student.phone || "")
+  const [email, setEmail] = useState(student.email || "")
+  const [debt, setDebt] = useState<string>(student.debt !== undefined ? String(student.debt) : "")
+  const [warnings, setWarnings] = useState<string>(student.warnings !== undefined ? String(student.warnings) : "0")
+  const [notes, setNotes] = useState(student.notes || "")
   const [status, setStatus] = useState<AttendanceStatus | "">(currentAttendance.status as AttendanceStatus | "")
   const [reason, setReason] = useState(currentAttendance.reason || "")
+  const [submitting, setSubmitting] = useState(false)
   const { updateStudent, updateAttendance } = useAttendance()
+  const { pushToast } = useToast()
 
   const stats = getStudentStats(student)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!isOpen) return
+    setName(student.name)
+    setAge(student.age ? String(student.age) : "")
+    setPhone(student.phone || "")
+    setEmail(student.email || "")
+    setDebt(student.debt !== undefined ? String(student.debt) : "")
+    setWarnings(student.warnings !== undefined ? String(student.warnings) : "0")
+    setNotes(student.notes || "")
+    const attendance = student.attendance?.[today] || { status: "", reason: "" }
+    setStatus(attendance.status as AttendanceStatus | "")
+    setReason(attendance.reason || "")
+  }, [isOpen, student, today])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (name.trim() && name !== student.name) {
-      updateStudent(student.id, name)
-    }
-    if (status) {
-      updateAttendance(student.id, today, status as AttendanceStatus, reason || undefined)
+    if (!name.trim()) {
+      pushToast("يرجى إدخال اسم الطالب", "error")
+      return
     }
 
-    onClose()
+    setSubmitting(true)
+    try {
+      const ageValue = age ? Number(age) : undefined
+      const debtValue = debt !== "" ? Number(debt) : undefined
+      const warningsValue = warnings !== "" ? Number(warnings) : undefined
+
+      await updateStudent(student.id, {
+        name: name.trim(),
+        phone: phone.trim() || undefined,
+        email: email.trim() || undefined,
+        age: Number.isNaN(ageValue) ? undefined : ageValue,
+        debt: Number.isNaN(debtValue) ? undefined : debtValue,
+        warnings: Number.isNaN(warningsValue) ? undefined : warningsValue,
+        notes: notes.trim() || undefined,
+      })
+
+      if (status) {
+        await updateAttendance(student.id, today, status as AttendanceStatus, reason || undefined)
+      }
+
+      pushToast("تم حفظ بيانات الطالب", "success")
+      onClose()
+    } catch (error) {
+      console.error("Error updating student", error)
+      pushToast("تعذر حفظ التعديلات", "error")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-96 shadow-lg space-y-4">
-        <h2 className="text-xl font-bold text-center mb-2">تعديل بيانات الطالب</h2>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label className="block mb-1">اسم الطالب</Label>
+    <Dialog
+      open={isOpen}
+      onClose={() => {
+        if (!submitting) onClose()
+      }}
+      title="تعديل بيانات الطالب"
+      description="حرر بيانات التواصل والبيانات المالية وسجل الحضور لليوم."
+      className="max-w-2xl"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>اسم الطالب</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="اسم الطالب" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>رقم الجوال</Label>
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>البريد الإلكتروني</Label>
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>العمر</Label>
+            <Input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="مثال: 18" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>المستحقات المالية</Label>
             <Input
-              type="text"
-              placeholder="اسم الطالب"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoFocus
+              type="number"
+              value={debt}
+              onChange={(e) => setDebt(e.target.value)}
+              placeholder="القيمة بالريال"
             />
           </div>
-          <div>
-            <Label className="block mb-1">حالة اليوم ({today})</Label>
-            <div className="flex gap-3">
-              {[
-                { value: "H", label: "حاضر" },
-                { value: "G", label: "غياب" },
-                { value: "E", label: " عذر" },
-              ].map((opt) => (
-                <label key={opt.value} className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="status"
-                    value={opt.value}
-                    checked={status === opt.value}
-                    onChange={() => setStatus(opt.value as AttendanceStatus)}
-                  />
-                  {opt.label}
-                </label>
-              ))}
-            </div>
+          <div className="space-y-1.5">
+            <Label>الإنذارات</Label>
+            <Input
+              type="number"
+              value={warnings}
+              min={0}
+              onChange={(e) => setWarnings(e.target.value)}
+              placeholder="عدد الإنذارات"
+            />
           </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>ملاحظات</Label>
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات داخلية" />
+          </div>
+        </div>
+
+        <div className="space-y-2 rounded-xl border border-border/60 bg-muted/40 p-3">
+          <Label className="flex items-center gap-2 text-sm font-semibold">
+            حالة اليوم ({today})
+            <span className="text-xs text-muted-foreground">سجّل حالة الطالب لهذا التاريخ</span>
+          </Label>
+          <div className="flex flex-wrap gap-3">
+            {[
+              { value: "H", label: "حاضر", tone: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+              { value: "G", label: "غياب", tone: "bg-red-50 text-red-700 border-red-200" },
+              { value: "E", label: "عذر", tone: "bg-amber-50 text-amber-700 border-amber-200" },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setStatus(opt.value as AttendanceStatus)}
+                className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                  status === opt.value ? `${opt.tone} ring-2 ring-offset-1` : "bg-white text-muted-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
           {status === "E" && (
-            <div>
-              <Label className="block mb-1">سبب العذر</Label>
+            <div className="space-y-1.5">
+              <Label>سبب العذر</Label>
               <Input
                 type="text"
                 placeholder="مثلاً: مرض - سفر - ظرف عائلي"
@@ -86,22 +175,24 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, stud
               />
             </div>
           )}
-          <div className="border-t pt-3 text-md font-medium text-gray-700">
-            <p>إجمالي الأيام المسجلة: {stats.present + stats.absent + stats.excused}</p>
-            <p>الحضور: {stats.present}</p>
-            <p>الغياب: {stats.absent}</p>
-            <p>الأعذار: {stats.excused}</p>
-          </div>
+        </div>
 
-          {/* الأزرار */}
-          <div className="flex gap-2 justify-end pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              إلغاء
-            </Button>
-            <Button type="submit">حفظ التعديلات</Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="grid grid-cols-1 gap-2 rounded-xl border border-border/60 bg-white/70 p-3 text-sm text-muted-foreground sm:grid-cols-3">
+          <p>إجمالي الأيام المسجلة: {stats.present + stats.absent + stats.excused}</p>
+          <p>الحضور: {stats.present}</p>
+          <p>الغياب: {stats.absent}</p>
+          <p>الأعذار: {stats.excused}</p>
+        </div>
+
+        <div className="flex gap-2 justify-end">
+          <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
+            إلغاء
+          </Button>
+          <Button type="submit" disabled={submitting}>
+            {submitting ? "جاري الحفظ..." : "حفظ التعديلات"}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   )
 }

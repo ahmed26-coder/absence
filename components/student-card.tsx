@@ -93,24 +93,26 @@ export const StudentCard: React.FC<StudentCardProps> = ({
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Button
-              size="icon-sm"
-              variant="ghost"
+              size="sm"
+              variant="outline"
               onClick={() => setShowEditStudent(true)}
-              className="text-blue-500 hover:text-blue-700"
+              className="gap-1 text-blue-600 hover:text-blue-700"
               title="تعديل الطالب"
             >
               <Edit2 size={16} />
+              تعديل
             </Button>
             <Button
-              size="icon-sm"
-              variant="ghost"
+              size="sm"
+              variant="destructive"
               onClick={() => setShowDeleteConfirm(true)}
-              className="text-red-500 hover:text-red-700"
+              className="gap-1"
               title="حذف الطالب"
             >
               <Trash2 size={16} />
+              حذف
             </Button>
           </div>
         </div>
