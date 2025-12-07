@@ -1,6 +1,9 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { motion } from "framer-motion"
+import { Users, Compass, Grid3x3, List, Search, Filter, NotebookPen, BarChart3 } from "lucide-react"
+
 import { AttendanceProvider, useAttendance } from "@/components/attendance-context"
 import { AddStudentModal } from "@/components/add-student-modal"
 import { StudentCard } from "@/components/student-card"
@@ -10,67 +13,253 @@ import { StatisticsPanel } from "@/components/statistics-panel"
 import { ExportButton } from "@/components/export-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Users, Grid3x3, List } from "lucide-react"
+import { AttendanceStatusButton } from "@/components/attendance-status-button"
+import { buildCourseData, type CourseOverview, type StudentWithCourses } from "@/lib/course-data"
+
+const CourseCard = ({
+  course,
+  onSelect,
+  isActive,
+}: {
+  course: CourseOverview
+  onSelect: (id: string) => void
+  isActive: boolean
+}) => {
+  const maxTrend =
+    course.trend.length > 0 ? Math.max(...course.trend.map((t) => t.present + t.excused + t.absent), 1) : 1
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(course.id)}
+      className={`relative w-full rounded-2xl border border-border/60 bg-white/80 p-4 text-start shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg ${
+        isActive ? "ring-2 ring-primary/30 border-primary/50" : ""
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">{course.schedule}</p>
+          <p className="text-base font-bold text-foreground">{course.name}</p>
+          <p className="text-xs text-muted-foreground">المشرف: {course.instructor}</p>
+        </div>
+        <div className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">{course.level}</div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Users size={14} />
+          {course.studentIds.length} طلاب
+        </span>
+        <span className="flex items-center gap-1">
+          <BarChart3 size={14} />
+          متوسط الحضور {course.averageAttendance}%
+        </span>
+        <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold">{course.focus}</span>
+      </div>
+      <div className="mt-4 grid grid-cols-6 gap-1.5">
+        {course.trend.map((session) => {
+          const total = session.present + session.absent + session.excused || 1
+          const height = Math.round(((session.present + session.excused * 0.5) / maxTrend) * 100)
+          const rate = Math.round((session.present / total) * 100)
+          return (
+            <div key={session.date} className="flex flex-col items-center gap-1">
+              <div
+                className="w-full rounded-full bg-gradient-to-t from-emerald-200 via-emerald-300 to-emerald-500"
+                style={{ height: `${Math.max(12, height)}px` }}
+                title={`الحضور ${rate}% | غياب ${session.absent}`}
+              />
+              <span className="text-[10px] text-muted-foreground">{session.date.split("-").slice(1).join("/")}</span>
+            </div>
+          )
+        })}
+      </div>
+    </button>
+  )
+}
 
 const AttendanceContent = () => {
-  const { data } = useAttendance()
+  const { data, isLoading, updateAttendance } = useAttendance()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
-  const [viewMode, setViewMode] = useState<"list" | "card">(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("viewMode") as "list" | "card") || "card";
-    }
-    return "card";
-  });
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("viewMode", viewMode);
-    }
-  }, [viewMode]);
-
   const [startDate, setStartDate] = useState(() => {
     const date = new Date()
     date.setDate(date.getDate() - 30)
     return date.toISOString().split("T")[0]
   })
   const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0])
-  const [currentPage, setCurrentPage] = useState(0)
   const [filterDate, setFilterDate] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"all" | "present" | "absent" | "excused">("all")
+  const [courseFilter, setCourseFilter] = useState("all")
+  const [viewMode, setViewMode] = useState<"list" | "card">(() => {
+    if (typeof window !== "undefined") {
+      return ((localStorage.getItem("viewMode") as "list" | "card") || "card") as "list" | "card"
+    }
+    return "card"
+  })
+  const [currentPage, setCurrentPage] = useState(0)
+  const [activeCourseId, setActiveCourseId] = useState<string | null>(null)
+  const [courseStudentSearch, setCourseStudentSearch] = useState("")
+  const [courseStatusFilter, setCourseStatusFilter] = useState<"all" | "present" | "absent" | "excused">("all")
+  const [courseDate, setCourseDate] = useState(new Date().toISOString().split("T")[0])
+  const itemsPerPage = 12
 
-  const itemsPerPage = 15
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("viewMode", viewMode)
+    }
+  }, [viewMode])
+
+  const { courses, studentsWithCourses, studentCourseSummaries } = useMemo(
+    () => buildCourseData(data.students),
+    [data.students],
+  )
+
+  useEffect(() => {
+    if (!activeCourseId && courses[0]) {
+      setActiveCourseId(courses[0].id)
+    }
+  }, [courses, activeCourseId])
+
+  useEffect(() => {
+    setCourseDate(selectedDate)
+  }, [selectedDate])
+
+  const courseLabels = useMemo(
+    () => courses.reduce<Record<string, string>>((acc, course) => ({ ...acc, [course.id]: course.name }), {}),
+    [courses],
+  )
 
   const filteredStudents = useMemo(() => {
-    if (!filterDate) return data.students
-    return data.students.filter((student) => {
-      const record = student.attendance[filterDate]
-      return record !== undefined
+    const term = searchTerm.trim().toLowerCase()
+    return studentsWithCourses.filter((student: StudentWithCourses) => {
+      const matchesSearch =
+        !term ||
+        student.name.toLowerCase().includes(term) ||
+        (student.courses || []).some((courseId) => (courseLabels[courseId] || "").toLowerCase().includes(term))
+
+      const matchesCourse = courseFilter === "all" || student.courses?.includes(courseFilter)
+      const record = student.attendance?.[selectedDate]
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "present" && record?.status === "H") ||
+        (statusFilter === "absent" && record?.status === "G") ||
+        (statusFilter === "excused" && record?.status === "E")
+
+      const matchesFilterDate = !filterDate || Boolean(student.attendance?.[filterDate])
+      return matchesSearch && matchesCourse && matchesStatus && matchesFilterDate
     })
-  }, [data.students, filterDate])
+  }, [studentsWithCourses, searchTerm, courseFilter, statusFilter, selectedDate, filterDate, courseLabels])
 
   const paginatedStudents = useMemo(() => {
     const start = currentPage * itemsPerPage
     return filteredStudents.slice(start, start + itemsPerPage)
   }, [filteredStudents, currentPage])
 
-  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage)
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage))
+
+  const activeCourse = courses.find((course) => course.id === activeCourseId)
+
+  const courseStudents = useMemo(
+    () =>
+      studentsWithCourses.filter((student) =>
+        activeCourseId ? student.courses?.includes(activeCourseId) : student.courses?.length,
+      ),
+    [studentsWithCourses, activeCourseId],
+  )
+
+  const filteredCourseStudents = useMemo(() => {
+    const term = courseStudentSearch.trim().toLowerCase()
+    return courseStudents.filter((student) => {
+      const matchesSearch = !term || student.name.toLowerCase().includes(term)
+      const record = student.attendance?.[courseDate]
+      const matchesStatus =
+        courseStatusFilter === "all" ||
+        (courseStatusFilter === "present" && record?.status === "H") ||
+        (courseStatusFilter === "absent" && record?.status === "G") ||
+        (courseStatusFilter === "excused" && record?.status === "E")
+
+      return matchesSearch && matchesStatus
+    })
+  }, [courseStudents, courseStudentSearch, courseStatusFilter, courseDate])
+
+  const handleNavigateToCourse = (courseId: string) => {
+    setActiveCourseId(courseId)
+    const section = document.getElementById("courses")
+    section?.scrollIntoView({ behavior: "smooth" })
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
-            <Users size={32} />
-            نظام تتبع الحضور
-          </h1>
-          <p className="text-gray-600">إدارة حضور الطلاب بسهولة وكفاءة</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-amber-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="relative overflow-hidden rounded-3xl border border-border/60 bg-white/90 p-6 shadow-md backdrop-blur"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.08),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(251,191,36,0.08),transparent_30%)]" />
+          <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-3 max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                <Compass size={14} />
+                لوحة حضور الدورات
+              </div>
+              <h1 className="text-3xl font-black text-foreground leading-tight">
+                منصة عربية لمتابعة الحضور والغياب مع نظرة فورية على التزام الطلاب
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                وصول سريع لقوائم الطلاب، الدورات، ونافذة إدخال الحضور اليومية. كل شيء باللغة العربية وبواجهة RTL واضحة.
+              </p>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary">
+                  الطلاب المسجلون: {data.students.length}
+                </span>
+                <span className="rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-800">
+                  جلسة اليوم: {selectedDate}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={() => setIsModalOpen(true)} size="lg" className="gap-2">
+                  <Users size={18} />
+                  إضافة طالب
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => document.getElementById("courses")?.scrollIntoView({ behavior: "smooth" })}
+                  className="gap-2"
+                >
+                  <NotebookPen size={18} />
+                  قائمة الدورات
+                </Button>
+                <ExportButton students={filteredStudents} startDate={startDate} endDate={endDate} />
+              </div>
+            </div>
+            <div className="w-full max-w-sm space-y-3">
+              <label className="text-sm font-semibold text-foreground">بحث شامل</label>
+              <div className="flex items-center gap-2 rounded-xl border border-border bg-white/80 px-3 py-2 shadow-inner">
+                <Search size={16} className="text-muted-foreground" />
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value)
+                    setCurrentPage(0)
+                  }}
+                  placeholder="ابحث عن طالب أو دورة"
+                  className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                استخدم البحث السريع للوصول إلى طالب محدد، أو انتقل مباشرة للدورة لمعالجة الحضور.
+              </p>
+            </div>
+          </div>
+        </motion.div>
 
-        {/* Controls */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">التاريخ الحالي</label>
+        <div className="rounded-2xl border border-border/60 bg-white/90 p-4 shadow-sm backdrop-blur">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground">تاريخ الجلسة الحالية</label>
               <Input
                 type="date"
                 value={selectedDate}
@@ -80,8 +269,8 @@ const AttendanceContent = () => {
                 }}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">تصفية حسب التاريخ</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground">تصفية حسب تسجيل تاريخ</label>
               <Input
                 type="date"
                 value={filterDate}
@@ -92,27 +281,67 @@ const AttendanceContent = () => {
                 placeholder="اختر تاريخ للتصفية"
               />
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground">حالة الحضور</label>
+              <select
+                className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value as typeof statusFilter)
+                  setCurrentPage(0)
+                }}
+              >
+                <option value="all">كل الحالات</option>
+                <option value="present">حاضر</option>
+                <option value="absent">غياب</option>
+                <option value="excused">عذر</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground">الدورة</label>
+              <select
+                className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                value={courseFilter}
+                onChange={(e) => {
+                  setCourseFilter(e.target.value)
+                  setCurrentPage(0)
+                }}
+              >
+                <option value="all">كل الدورات</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+          <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <DateRangeSelector
               startDate={startDate}
               endDate={endDate}
               onStartDateChange={setStartDate}
               onEndDateChange={setEndDate}
             />
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                <Filter size={14} />
+                {filteredStudents.length} نتائج
+              </span>
               <Button
                 onClick={() => setViewMode("card")}
                 variant={viewMode === "card" ? "default" : "outline"}
-                size="sm"
+                size="icon-sm"
+                aria-label="عرض كبطاقات"
               >
                 <Grid3x3 size={16} />
               </Button>
               <Button
                 onClick={() => setViewMode("list")}
                 variant={viewMode === "list" ? "default" : "outline"}
-                size="sm"
+                size="icon-sm"
+                aria-label="عرض كقائمة"
               >
                 <List size={16} />
               </Button>
@@ -120,80 +349,198 @@ const AttendanceContent = () => {
           </div>
         </div>
 
-        {/* Statistics */}
         <StatisticsPanel students={filteredStudents} startDate={startDate} endDate={endDate} />
 
-        {/* Export and Add Student */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between">
-          <Button onClick={() => setIsModalOpen(true)} size="lg">
-            <Users size={18} className="ml-2" />
-            إضافة طالب جديد
-          </Button>
-          <ExportButton students={filteredStudents} startDate={startDate} endDate={endDate} />
-        </div>
-
-        {/* Students Display */}
-        <div className={viewMode === "card" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" : ""}>
-          {paginatedStudents.map((student) =>
-            viewMode === "card" ? (
-              <StudentCard
-                key={student.id}
-                student={student}
-                selectedDate={selectedDate}
-                startDate={startDate}
-                endDate={endDate}
-              />
-
-            ) : (
-              <StudentListItem key={student.id} student={student} selectedDate={selectedDate} />
-            ),
-          )}
-        </div>
-
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center gap-2 mt-6">
-            <Button
-              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-              disabled={currentPage === 0}
-              variant="outline"
-            >
-              السابق
-            </Button>
-            <div className="flex items-center gap-2">
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <Button
-                  key={i}
-                  onClick={() => setCurrentPage(i)}
-                  variant={currentPage === i ? "default" : "outline"}
-                  size="sm"
-                >
-                  {i + 1}
-                </Button>
-              ))}
+        <section id="students" className="space-y-4">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-foreground">قائمة الطلاب</h2>
+              <p className="text-sm text-muted-foreground">
+                تصفية بالاسم، الحالة، أو الدورة، مع تحديث فوري لسجلات الحضور.
+              </p>
             </div>
-            <Button
-              onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-              disabled={currentPage === totalPages - 1}
-              variant="outline"
-            >
-              التالي
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => setIsModalOpen(true)} className="gap-1">
+                <Users size={14} />
+                طالب جديد
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => document.getElementById("courses")?.scrollIntoView({ behavior: "smooth" })}
+              >
+                الذهاب للدورات
+              </Button>
+            </div>
           </div>
-        )}
 
-        {/* Empty State */}
-        {data.students.length === 0 && (
-          <div className="text-center py-12">
-            <Users size={48} className="mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-600 mb-4">لا توجد طلاب حتى الآن</p>
-            <Button onClick={() => setIsModalOpen(true)}>إضافة أول طالب</Button>
+          <div
+            className={
+              viewMode === "card"
+                ? "grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
+                : "overflow-hidden rounded-2xl border border-border/60 bg-white/80 shadow-sm"
+            }
+          >
+            {paginatedStudents.map((student) =>
+              viewMode === "card" ? (
+                <StudentCard
+                  key={student.id}
+                  student={student}
+                  selectedDate={selectedDate}
+                  courseLabels={courseLabels}
+                  onNavigateToCourse={handleNavigateToCourse}
+                  courseSummaries={studentCourseSummaries[student.id]}
+                />
+              ) : (
+                <StudentListItem
+                  key={student.id}
+                  student={student}
+                  selectedDate={selectedDate}
+                  courseLabels={courseLabels}
+                  onNavigateToCourse={handleNavigateToCourse}
+                  courseSummaries={studentCourseSummaries[student.id]}
+                />
+              ),
+            )}
           </div>
-        )}
+
+          {filteredStudents.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-border/70 bg-white/70 p-8 text-center text-muted-foreground">
+              لا توجد طلاب مطابقة للبحث الحالي. جرّب تصفية مختلفة.
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2">
+              <Button
+                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                disabled={currentPage === 0}
+                variant="outline"
+              >
+                السابق
+              </Button>
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <Button
+                    key={i}
+                    onClick={() => setCurrentPage(i)}
+                    variant={currentPage === i ? "default" : "outline"}
+                    size="sm"
+                  >
+                    {i + 1}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                disabled={currentPage === totalPages - 1}
+                variant="outline"
+              >
+                التالي
+              </Button>
+            </div>
+          )}
+        </section>
+
+        <section id="courses" className="space-y-4">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-foreground">لوحة الدورات</h2>
+              <p className="text-sm text-muted-foreground">
+                اختر دورة لمراجعة الحضور، إضافة أعذار، وتصفيتها حسب الطالب أو التاريخ.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+              <BarChart3 size={14} />
+              {courses.length} دورات مفعّلة
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {courses.map((course) => (
+              <CourseCard key={course.id} course={course} onSelect={setActiveCourseId} isActive={course.id === activeCourseId} />
+            ))}
+          </div>
+
+          {activeCourse && (
+            <div className="rounded-2xl border border-border/60 bg-white/90 p-5 shadow-sm backdrop-blur">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">{activeCourse.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {activeCourse.schedule} • {activeCourse.location} • بإشراف {activeCourse.instructor}
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                    <span className="rounded-full bg-emerald-100 px-2 py-1 font-semibold text-emerald-700">
+                      الطلاب: {activeCourse.studentIds.length}
+                    </span>
+                    <span className="rounded-full bg-indigo-100 px-2 py-1 font-semibold text-indigo-700">
+                      متوسط الحضور: {activeCourse.averageAttendance}%
+                    </span>
+                    <span className="rounded-full bg-amber-100 px-2 py-1 font-semibold text-amber-800">
+                      مسار: {activeCourse.focus}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
+                  <Input
+                    type="text"
+                    value={courseStudentSearch}
+                    onChange={(e) => setCourseStudentSearch(e.target.value)}
+                    placeholder="ابحث داخل الدورة"
+                  />
+                  <select
+                    className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                    value={courseStatusFilter}
+                    onChange={(e) => setCourseStatusFilter(e.target.value as typeof courseStatusFilter)}
+                  >
+                    <option value="all">كل الحالات</option>
+                    <option value="present">حاضر</option>
+                    <option value="absent">غياب</option>
+                    <option value="excused">عذر</option>
+                  </select>
+                  <Input type="date" value={courseDate} onChange={(e) => setCourseDate(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="mt-4 divide-y divide-border rounded-xl border border-border/70 bg-white/70">
+                {filteredCourseStudents.length === 0 && (
+                  <p className="p-4 text-center text-sm text-muted-foreground">لا يوجد طلاب مطابقون للتصفية.</p>
+                )}
+                {filteredCourseStudents.map((student) => {
+                  const record = student.attendance?.[courseDate]
+                  return (
+                    <div key={student.id} className="flex flex-col gap-2 p-4 md:flex-row md:items-center md:justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">{student.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {record?.status ? `آخر حالة: ${record.status === "H" ? "حاضر" : record.status === "G" ? "غياب" : "عذر"}` : "لم يُسجل حضور في هذا التاريخ"}
+                        </p>
+                      </div>
+                      <AttendanceStatusButton
+                        status={record?.status || null}
+                        onStatusChange={(status, reason) => updateAttendance(student.id, courseDate, status, reason)}
+                        date={courseDate}
+                        currentReason={record?.reason}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </section>
       </div>
 
       <AddStudentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
+      {isLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-muted-foreground shadow-lg">
+            جاري تحديث البيانات...
+          </div>
+        </div>
+      )}
     </div>
   )
 }

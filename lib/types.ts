@@ -10,6 +10,7 @@ export interface Student {
   id: string
   name: string
   attendance: Record<string, AttendanceRecord>
+  courses?: string[]
 }
 
 export interface AttendanceData {

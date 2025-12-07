@@ -10,13 +10,23 @@ import { Trash2, Edit2, Info } from "lucide-react"
 import { DeleteConfirmModal } from "./delete-confirm-modal"
 import { EditStudentModal } from "./edit-student-modal"
 import { StudentDetailsModal } from "./student-details-modal"
+import type { StudentCourseSummary } from "@/lib/course-data"
 
 interface StudentListItemProps {
   student: Student
   selectedDate: string
+  courseLabels?: Record<string, string>
+  onNavigateToCourse?: (courseId: string) => void
+  courseSummaries?: StudentCourseSummary[]
 }
 
-export const StudentListItem: React.FC<StudentListItemProps> = ({ student, selectedDate }) => {
+export const StudentListItem: React.FC<StudentListItemProps> = ({
+  student,
+  selectedDate,
+  courseLabels,
+  onNavigateToCourse,
+  courseSummaries,
+}) => {
   const { updateAttendance, deleteStudent } = useAttendance()
   const stats = getStudentStats(student, selectedDate, selectedDate)
   const record = student.attendance[selectedDate]
@@ -45,27 +55,38 @@ export const StudentListItem: React.FC<StudentListItemProps> = ({ student, selec
 
   return (
     <>
-      <div className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 gap-3">
-          <div className="flex flex-col sm:flex-1">
+      <div className="border-b border-gray-200 bg-white/80 p-3 transition-colors hover:bg-emerald-50/40">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-col sm:flex-1 space-y-1">
             <div className="flex flex-row sm:items-center sm:gap-3 lg:justify-start justify-between">
-              <p className="font-semibold text-lg sm:text-xl">{student.name}</p>
+              <p className="font-semibold text-lg sm:text-xl text-foreground">{student.name}</p>
               <span
                 className={`inline-block w-fit px-3 py-1 rounded text-md font-medium mt-1 sm:mt-0 ${getStatusBgColor(
-                  record?.status
+                  record?.status,
                 )}`}
               >
                 {getStatusDisplay(record?.status)}
               </span>
             </div>
 
+            <div className="flex flex-wrap gap-1">
+              {(student.courses || []).map((courseId) => (
+                <button
+                  key={courseId}
+                  type="button"
+                  onClick={() => onNavigateToCourse?.(courseId)}
+                  className="rounded-full border border-border/60 bg-white/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition hover:border-primary/60 hover:text-primary"
+                >
+                  {courseLabels?.[courseId] || courseId}
+                </button>
+              ))}
+            </div>
+
             <p className="text-gray-600 font-medium text-base mt-1">
               حاضر: {stats.present} | غياب: {stats.absent} | عذر: {stats.excused}
             </p>
 
-            {record?.reason && (
-              <p className="text-gray-700 font-medium text-md mt-1"> السبب: {record.reason}</p>
-            )}
+            {record?.reason && <p className="text-gray-700 font-medium text-md mt-1"> السبب: {record.reason}</p>}
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <AttendanceStatusButton
@@ -126,6 +147,8 @@ export const StudentListItem: React.FC<StudentListItemProps> = ({ student, selec
       <StudentDetailsModal
         isOpen={showDetails}
         student={student}
+        courseSummaries={courseSummaries}
+        onNavigateToCourse={onNavigateToCourse}
         onClose={() => setShowDetails(false)}
       />
     </>
