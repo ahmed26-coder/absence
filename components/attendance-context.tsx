@@ -2,21 +2,28 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useCallback, useEffect } from "react"
-import type { AttendanceData, Student } from "@/lib/types"
+import type { AttendanceData, Student, Course } from "@/lib/types"
 import {
   getStorageData,
   addStudentToSupabase,
   deleteStudentFromSupabase,
   updateAttendanceInSupabase,
   updateStudentInSupabase,
+  addCourseToSupabase,
+  updateCourseInSupabase,
+  deleteCourseFromSupabase,
 } from "@/lib/supabase-storage"
 
 interface AttendanceContextType {
   data: AttendanceData
-  addStudent: (name: string) => Promise<Student | null>
+  addStudent: (payload: Pick<Student, "name"> & Partial<Student> & { courses: string[] }) => Promise<Student | null>
   deleteStudent: (studentId: string) => void
   updateAttendance: (studentId: string, date: string, status: string | null, reason?: string) => void
-  updateStudent: (studentId: string, name: string) => void
+  updateStudent: (studentId: string, updates: Partial<Omit<Student, "id" | "attendance">> & { courses?: string[] }) => void
+  courses: Course[]
+  addCourse: (course: Course) => Promise<Course | null>
+  updateCourse: (courseId: string, updates: Partial<Course>) => Promise<boolean>
+  deleteCourse: (courseId: string) => Promise<boolean>
   refreshData: () => void
   isLoading: boolean
 }
@@ -24,7 +31,7 @@ interface AttendanceContextType {
 const AttendanceContext = createContext<AttendanceContextType | undefined>(undefined)
 
 export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [data, setData] = useState<AttendanceData>({ students: [], lastUpdated: new Date().toISOString() })
+  const [data, setData] = useState<AttendanceData>({ students: [], courses: [], lastUpdated: new Date().toISOString() })
   const [isLoaded, setIsLoaded] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -56,10 +63,10 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [])
 
   const addStudent = useCallback(
-    async (name: string) => {
+    async (payload) => {
       try {
         setIsLoading(true)
-        const created = await addStudentToSupabase(name)
+        const created = await addStudentToSupabase(payload)
         await refreshData()
         return created
       } catch (error) {
@@ -104,10 +111,10 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   )
 
   const updateStudent = useCallback(
-    async (studentId: string, name: string) => {
+    async (studentId: string, updates) => {
       try {
         setIsLoading(true)
-        await updateStudentInSupabase(studentId, name)
+        await updateStudentInSupabase(studentId, updates)
         await refreshData()
       } catch (error) {
         console.error("[v0] Error updating student:", error)
@@ -122,9 +129,63 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return <div className="flex items-center justify-center min-h-screen">جاري التحميل...</div>
   }
 
+  const addCourse = async (course: Course) => {
+    try {
+      setIsLoading(true)
+      const created = await addCourseToSupabase(course)
+      await refreshData()
+      return created
+    } catch (error) {
+      console.error("[v0] Error adding course:", error)
+      return null
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const updateCourse = async (courseId: string, updates: Partial<Course>) => {
+    try {
+      setIsLoading(true)
+      const ok = await updateCourseInSupabase(courseId, updates)
+      await refreshData()
+      return ok
+    } catch (error) {
+      console.error("[v0] Error updating course:", error)
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const deleteCourse = async (courseId: string) => {
+    try {
+      setIsLoading(true)
+      const ok = await deleteCourseFromSupabase(courseId)
+      await refreshData()
+      return ok
+    } catch (error) {
+      console.error("[v0] Error deleting course:", error)
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <AttendanceContext.Provider
-      value={{ data, addStudent, deleteStudent, updateAttendance, updateStudent, refreshData, isLoading }}
+      value={{
+        data,
+        addStudent,
+        deleteStudent,
+        updateAttendance,
+        updateStudent,
+        refreshData,
+        isLoading,
+        courses: data.courses,
+        addCourse,
+        updateCourse,
+        deleteCourse,
+      }}
     >
       {children}
     </AttendanceContext.Provider>

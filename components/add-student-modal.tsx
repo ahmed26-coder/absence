@@ -16,16 +16,21 @@ interface AddStudentModalProps {
 
 export const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose }) => {
   const [name, setName] = useState("")
-  const { addStudent } = useAttendance()
+  const [courseId, setCourseId] = useState<string>("")
+  const { addStudent, courses } = useAttendance()
   const { pushToast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) return
-    const created = await addStudent(name.trim())
+    if (!name.trim() || !courseId) {
+      pushToast(courseId ? "أدخل اسم الطالب" : "يجب تسجيل الطالب في دورة واحدة على الأقل", "error")
+      return
+    }
+    const created = await addStudent({ name: name.trim(), courses: [courseId] })
     if (created) {
       pushToast("تمت إضافة الطالب بنجاح", "success")
       setName("")
+      setCourseId("")
       onClose()
     } else {
       pushToast("تعذّر إضافة الطالب", "error")
@@ -42,11 +47,26 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClos
           onChange={(e) => setName(e.target.value)}
           autoFocus
         />
+        <div className="space-y-2">
+          <label className="form-label">الدورة</label>
+          <select
+            className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+            value={courseId}
+            onChange={(e) => setCourseId(e.target.value)}
+          >
+            <option value="">اختر دورة</option>
+            {courses.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>
             إلغاء
           </Button>
-          <Button type="submit" disabled={!name.trim()}>
+          <Button type="submit" disabled={!name.trim() || !courseId}>
             إضافة
           </Button>
         </div>

@@ -14,24 +14,46 @@ interface StudentFormProps {
   open: boolean
   onClose: () => void
   onSubmit: (payload: {
+    id?: string
     name: string
     phone?: string
     email?: string
     notes?: string
-    courseIds?: string[]
-    id?: string
+    age?: number
+    debt?: number
+    warnings?: number
+    courseIds: string[]
   }) => void
   initialData?: Student
-  initialMeta?: { phone?: string; email?: string; notes?: string; courseIds?: string[] }
+  initialMeta?: {
+    phone?: string
+    email?: string
+    notes?: string
+    age?: number
+    debt?: number
+    warnings?: number
+    courseIds?: string[]
+  }
   courses: CourseOverview[]
 }
 
-export const StudentForm: React.FC<StudentFormProps> = ({ open, onClose, onSubmit, initialData, initialMeta, courses }) => {
+export const StudentForm: React.FC<StudentFormProps> = ({
+  open,
+  onClose,
+  onSubmit,
+  initialData,
+  initialMeta,
+  courses,
+}) => {
   const [name, setName] = useState(initialData?.name || "")
   const [phone, setPhone] = useState(initialMeta?.phone || "")
   const [email, setEmail] = useState(initialMeta?.email || "")
   const [notes, setNotes] = useState(initialMeta?.notes || "")
+  const [age, setAge] = useState<number | undefined>(initialMeta?.age ?? initialData?.age)
+  const [debt, setDebt] = useState<number | undefined>(initialMeta?.debt ?? initialData?.debt)
+  const [warnings, setWarnings] = useState<number | undefined>(initialMeta?.warnings ?? initialData?.warnings)
   const [courseIds, setCourseIds] = useState<string[]>(initialMeta?.courseIds || initialData?.courses || [])
+  const [courseError, setCourseError] = useState<string | null>(null)
 
   const isEdit = Boolean(initialData?.id)
 
@@ -41,18 +63,29 @@ export const StudentForm: React.FC<StudentFormProps> = ({ open, onClose, onSubmi
     setPhone(initialMeta?.phone || "")
     setEmail(initialMeta?.email || "")
     setNotes(initialMeta?.notes || "")
+    setAge(initialMeta?.age ?? initialData?.age)
+    setDebt(initialMeta?.debt ?? initialData?.debt)
+    setWarnings(initialMeta?.warnings ?? initialData?.warnings)
     setCourseIds(initialMeta?.courseIds || initialData?.courses || [])
+    setCourseError(null)
   }, [initialData, initialMeta, open])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
+    if (!courseIds.length) {
+      setCourseError("يجب تسجيل الطالب في دورة واحدة على الأقل")
+      return
+    }
     onSubmit({
       id: initialData?.id,
       name: name.trim(),
       phone: phone.trim(),
       email: email.trim(),
       notes: notes.trim(),
+      age,
+      debt,
+      warnings,
       courseIds,
     })
   }
@@ -60,7 +93,11 @@ export const StudentForm: React.FC<StudentFormProps> = ({ open, onClose, onSubmi
   const courseOptions = useMemo(() => courses, [courses])
 
   const toggleCourse = (id: string) => {
-    setCourseIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]))
+    setCourseIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+      if (next.length) setCourseError(null)
+      return next
+    })
   }
 
   return (
@@ -77,20 +114,55 @@ export const StudentForm: React.FC<StudentFormProps> = ({ open, onClose, onSubmi
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-2">
-            <label className="form-label">رقم الهاتف</label>
+            <label className="form-label">العمر</label>
+            <Input
+              type="number"
+              value={age ?? ""}
+              onChange={(e) => setAge(e.target.value ? Number(e.target.value) : undefined)}
+              placeholder="مثال: 20"
+              min={0}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="form-label">عدد الإنذارات</label>
+            <Input
+              type="number"
+              value={warnings ?? ""}
+              onChange={(e) => setWarnings(e.target.value ? Number(e.target.value) : undefined)}
+              placeholder="0"
+              min={0}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <label className="form-label">رقم الجوال</label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" />
           </div>
+            <div className="space-y-2">
+              <label className="form-label">المستحقات المالية</label>
+              <Input
+                type="number"
+                value={debt ?? ""}
+                onChange={(e) => setDebt(e.target.value ? Number(e.target.value) : undefined)}
+                placeholder="0"
+                min={0}
+                step="0.1"
+              />
+            </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-2">
             <label className="form-label">البريد الإلكتروني</label>
             <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" />
           </div>
+          <div className="space-y-2">
+            <label className="form-label">ملاحظات</label>
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات داخلية" />
+          </div>
         </div>
         <div className="space-y-2">
-          <label className="form-label">ملاحظات</label>
-          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات داخلية" />
-        </div>
-        <div className="space-y-2">
-          <label className="form-label">إسناد إلى دورات</label>
+          <label className="form-label">إسناد إلى دورات *</label>
           <div className="flex flex-wrap gap-2 rounded-xl border border-border/60 bg-muted/40 p-3">
             {courseOptions.map((course) => {
               const selected = courseIds.includes(course.id)
@@ -110,6 +182,7 @@ export const StudentForm: React.FC<StudentFormProps> = ({ open, onClose, onSubmi
               )
             })}
           </div>
+          {courseError && <p className="text-xs font-semibold text-red-600">{courseError}</p>}
         </div>
         <div className="flex items-center justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>

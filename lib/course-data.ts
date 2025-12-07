@@ -1,16 +1,6 @@
-import type { Student } from "./types"
+import type { Student, Course } from "./types"
 import { getStudentStats } from "./storage"
-
-export interface Course {
-  id: string
-  name: string
-  instructor: string
-  schedule: string
-  level: string
-  focus: string
-  location: string
-  color: string
-}
+import { getStoredCourses } from "./course-storage"
 
 export interface CourseOverview extends Course {
   studentIds: string[]
@@ -27,49 +17,6 @@ export interface StudentCourseSummary {
   totalSessions: number
 }
 
-const courseCatalog: Course[] = [
-  {
-    id: "tajweed",
-    name: "دورة التجويد المتقدم",
-    instructor: "الشيخ أبو عبد الرحمن",
-    schedule: "الأحد - الثلاثاء",
-    level: "متقدم",
-    focus: "تصحيح التلاوة وأحكام التجويد",
-    location: "قاعة الحديث",
-    color: "emerald",
-  },
-  {
-    id: "fiqh",
-    name: "فقه العبادات",
-    instructor: "الشيخ سفيان",
-    schedule: "الإثنين - الأربعاء",
-    level: "متوسط",
-    focus: "كتاب الطهارة والصلاة",
-    location: "قاعة الفقه",
-    color: "indigo",
-  },
-  {
-    id: "aqeedah",
-    name: "العقيدة الطحاوية",
-    instructor: "الشيخ الحارث",
-    schedule: "الخميس",
-    level: "مكثف",
-    focus: "أصول الاعتقاد",
-    location: "قاعة العقيدة",
-    color: "amber",
-  },
-  {
-    id: "seerah",
-    name: "سيرة النبي صلى الله عليه وسلم",
-    instructor: "الشيخ أنس",
-    schedule: "الجمعة",
-    level: "مبتدئ",
-    focus: "محطات من السيرة",
-    location: "مكتبة المسجد",
-    color: "cyan",
-  },
-]
-
 const formatDate = (date: Date) => date.toISOString().split("T")[0]
 
 const recentDates = (count: number) => {
@@ -81,20 +28,9 @@ const recentDates = (count: number) => {
   }).sort()
 }
 
-const buildAssignments = (students: Student[]) => {
-  const courseIds = courseCatalog.map((c) => c.id)
-  return students.reduce<Record<string, string[]>>((acc, student, index) => {
-    const primary = courseIds[index % courseIds.length]
-    const secondary = courseIds[(index + 1) % courseIds.length]
-    const bonus = index % 3 === 0 ? courseIds[(index + 2) % courseIds.length] : null
-
-    acc[student.id] = [primary, secondary, bonus].filter(Boolean) as string[]
-    return acc
-  }, {})
-}
-
 export const buildCourseData = (
   students: Student[],
+  existingCourses?: CourseOverview[],
 ): {
   courses: CourseOverview[]
   studentsWithCourses: StudentWithCourses[]
@@ -102,11 +38,10 @@ export const buildCourseData = (
   sessionDates: string[]
   studentCourseSummaries: Record<string, StudentCourseSummary[]>
 } => {
-  const assignments = buildAssignments(students)
   const sessionDates = recentDates(6)
-
-  const courses: CourseOverview[] = courseCatalog.map((course) => {
-    const assignedStudents = students.filter((student) => assignments[student.id]?.includes(course.id))
+  const storedCourses = existingCourses && existingCourses.length > 0 ? existingCourses : getStoredCourses()
+  const courses: CourseOverview[] = storedCourses.map((course) => {
+    const assignedStudents = students.filter((student) => student.courses?.includes(course.id))
 
     const trend = sessionDates.map((date) => {
       let present = 0
@@ -124,8 +59,7 @@ export const buildCourseData = (
     })
 
     const totalSlots = sessionDates.length * Math.max(assignedStudents.length, 1)
-    const totalPresence =
-      trend.reduce((acc, session) => acc + session.present + session.excused * 0.5, 0) || 0
+    const totalPresence = trend.reduce((acc, session) => acc + session.present + session.excused * 0.5, 0) || 0
     const averageAttendance = totalSlots ? Math.round((totalPresence / totalSlots) * 100) : 0
 
     return {
@@ -138,13 +72,18 @@ export const buildCourseData = (
 
   const studentsWithCourses: StudentWithCourses[] = students.map((student) => ({
     ...student,
-    courses: assignments[student.id] || [],
+    courses: student.courses || [],
   }))
+
+  const assignments = studentsWithCourses.reduce<Record<string, string[]>>((acc, student) => {
+    acc[student.id] = student.courses || []
+    return acc
+  }, {})
 
   const studentCourseSummaries = studentsWithCourses.reduce<Record<string, StudentCourseSummary[]>>(
     (acc, student) => {
       acc[student.id] = (assignments[student.id] || []).map((courseId) => {
-        const course = courseCatalog.find((c) => c.id === courseId)
+        const course = courses.find((c) => c.id === courseId)
         const stats = getStudentStats(student)
         const totalSessions = stats.present + stats.absent + stats.excused
 

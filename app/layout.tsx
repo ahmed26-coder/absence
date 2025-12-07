@@ -3,6 +3,7 @@ import { Cairo, Noto_Naskh_Arabic } from "next/font/google"
 import "./globals.css"
 import { Navbar } from "@/components/navbar"
 import { ToastProvider } from "@/components/ui/toast-provider"
+import { BottomNav } from "@/components/bottom-nav"
 
 const cairo = Cairo({
   variable: "--font-base",
@@ -35,7 +36,8 @@ export default function RootLayout({
       <body className={`${cairo.variable} ${naskh.variable} antialiased`}>
         <ToastProvider>
           <Navbar />
-          <main className="pt-20 md:pt-24">{children}</main>
+          <main className="pt-20 md:pt-24 pb-20 md:pb-0">{children}</main>
+          <BottomNav />
         </ToastProvider>
       </body>
     </html>

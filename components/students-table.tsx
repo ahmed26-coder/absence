@@ -7,7 +7,6 @@ import type { Student } from "@/lib/types"
 import type { StudentCourseSummary } from "@/lib/course-data"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Progress } from "@/components/ui/progress"
 
 interface StudentsTableProps {
   students: Student[]
@@ -56,36 +55,33 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border/60">
-        <div className="hidden grid-cols-[2fr,1fr,1fr,1fr] items-center gap-4 border-b border-border/60 bg-muted/50 px-4 py-3 text-sm font-semibold text-muted-foreground md:grid">
+        <div className="hidden grid-cols-[1.8fr,1fr,1fr,1fr,1fr] items-center gap-4 border-b border-border/60 bg-muted/50 px-4 py-3 text-sm font-semibold text-muted-foreground md:grid">
           <span>اسم الطالب</span>
+          <span>الجوال</span>
           <span>عدد الدورات</span>
-          <span>متوسط الحضور</span>
+          <span>المستحقات</span>
+          <span>الإنذارات</span>
           <span className="text-left">إجراءات</span>
         </div>
         <div className="divide-y divide-border/60">
           {filtered.map((student) => {
             const summaries = studentCourseSummaries[student.id] || []
             const coursesCount = summaries.length
-            const avgAttendance =
-              summaries.length > 0
-                ? Math.round(
-                    summaries.reduce((acc, c) => acc + (c.attendanceRate || 0), 0) / Math.max(1, summaries.length),
-                  )
-                : 0
-            return (
+            const warnings = student.warnings ?? 0
+            const debt = student.debt ?? 0
+             return (
               <div
                 key={student.id}
-                className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[2fr,1fr,1fr,1fr]"
+                className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[1.8fr,1fr,1fr,1fr,1fr]"
               >
                 <div>
                   <p className="text-base font-semibold text-foreground">{student.name}</p>
                   <p className="text-xs text-muted-foreground">المعرف: {student.id}</p>
                 </div>
+                <div className="text-sm font-semibold text-foreground">{student.phone || "—"}</div>
                 <div className="text-sm font-semibold text-foreground">{coursesCount}</div>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-foreground">{avgAttendance}%</p>
-                  <Progress value={avgAttendance} />
-                </div>
+                <div className="text-sm font-semibold text-foreground">{debt}</div>
+                <div className="text-sm font-semibold text-foreground">{warnings}</div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => onView(student.id)} className="gap-1">
                     <Eye size={14} />

@@ -1,5 +1,5 @@
 import { supabase } from "./supabase"
-import type { AttendanceData, Student, AttendanceStatus } from "./types"
+import type { AttendanceData, Student, AttendanceStatus, Course } from "./types"
 
 export const getStudentsFromSupabase = async (): Promise<Student[]> => {
   try {
@@ -10,17 +10,20 @@ export const getStudentsFromSupabase = async (): Promise<Student[]> => {
       return []
     }
 
-    // Fetch attendance records for each student
-    const studentsWithAttendance: Student[] = await Promise.all(
+    // Fetch attendance records and course assignments for each student
+    const studentsWithExtras: Student[] = await Promise.all(
       (data || []).map(async (student) => {
-        const { data: attendanceData, error: attendanceError } = await supabase
-          .from("attendance")
-          .select("*")
-          .eq("student_id", student.id)
+        const [{ data: attendanceData, error: attendanceError }, { data: courseRows, error: courseError }] =
+          await Promise.all([
+            supabase.from("attendance").select("*").eq("student_id", student.id),
+            supabase.from("student_courses").select("course_id").eq("student_id", student.id),
+          ])
 
         if (attendanceError) {
           console.error("[v0] Error fetching attendance:", attendanceError)
-          return { ...student, attendance: {} }
+        }
+        if (courseError) {
+          console.error("[v0] Error fetching student_courses:", courseError)
         }
 
         const attendance: Record<string, { status: AttendanceStatus; reason?: string }> = {}
@@ -32,27 +35,48 @@ export const getStudentsFromSupabase = async (): Promise<Student[]> => {
           }
         })
 
-        return { ...student, attendance }
+        return {
+          ...student,
+          attendance,
+          courses: (courseRows || []).map((row) => row.course_id),
+        }
       }),
     )
 
-    return studentsWithAttendance
+    return studentsWithExtras
   } catch (error) {
     console.error("[v0] Unexpected error fetching students:", error)
     return []
   }
 }
 
-export const addStudentToSupabase = async (name: string): Promise<Student | null> => {
+export const addStudentToSupabase = async (
+  payload: Pick<Student, "name"> & Partial<Student> & { courses: string[] },
+): Promise<Student | null> => {
   try {
-    const { data, error } = await supabase.from("students").insert([{ name }]).select().single()
+    const { name, courses, ...rest } = payload
+    const { data, error } = await supabase
+      .from("students")
+      .insert([{ name, ...rest }])
+      .select()
+      .single()
 
     if (error) {
       console.error("[v0] Error adding student:", error)
       return null
     }
 
-    return { ...data, attendance: {} }
+    // attach courses
+    if (courses && courses.length) {
+      const { error: courseError } = await supabase
+        .from("student_courses")
+        .insert(courses.map((courseId) => ({ student_id: data.id, course_id: courseId })))
+      if (courseError) {
+        console.error("[v0] Error adding student courses:", courseError)
+      }
+    }
+
+    return { ...data, attendance: {}, courses }
   } catch (error) {
     console.error("[v0] Unexpected error adding student:", error)
     return null
@@ -67,6 +91,12 @@ export const deleteStudentFromSupabase = async (studentId: string): Promise<bool
     if (attendanceError) {
       console.error("[v0] Error deleting attendance records:", attendanceError)
       return false
+    }
+
+    // Delete student-course relations
+    const { error: scError } = await supabase.from("student_courses").delete().eq("student_id", studentId)
+    if (scError) {
+      console.error("[v0] Error deleting student_courses:", scError)
     }
 
     // Delete student
@@ -84,13 +114,32 @@ export const deleteStudentFromSupabase = async (studentId: string): Promise<bool
   }
 }
 
-export const updateStudentInSupabase = async (studentId: string, name: string): Promise<boolean> => {
+export const updateStudentInSupabase = async (
+  studentId: string,
+  updates: Partial<Omit<Student, "id" | "attendance">> & { courses?: string[] },
+): Promise<boolean> => {
   try {
-    const { error } = await supabase.from("students").update({ name }).eq("id", studentId)
+    const { courses, ...rest } = updates
+    const { error } = await supabase.from("students").update(rest).eq("id", studentId)
 
     if (error) {
       console.error("[v0] Error updating student:", error)
       return false
+    }
+
+    if (courses) {
+      const { error: delError } = await supabase.from("student_courses").delete().eq("student_id", studentId)
+      if (delError) {
+        console.error("[v0] Error clearing student courses:", delError)
+      }
+      if (courses.length) {
+        const { error: addError } = await supabase
+          .from("student_courses")
+          .insert(courses.map((courseId) => ({ student_id: studentId, course_id: courseId })))
+        if (addError) {
+          console.error("[v0] Error updating student courses:", addError)
+        }
+      }
     }
 
     return true
@@ -145,10 +194,68 @@ export const updateAttendanceInSupabase = async (
   }
 }
 
+export const getCoursesFromSupabase = async (): Promise<Course[]> => {
+  try {
+    const { data, error } = await supabase.from("courses").select("*")
+    if (error) {
+      console.error("[v0] Error fetching courses:", error)
+      return []
+    }
+    return data || []
+  } catch (error) {
+    console.error("[v0] Unexpected error fetching courses:", error)
+    return []
+  }
+}
+
+export const addCourseToSupabase = async (course: Course): Promise<Course | null> => {
+  try {
+    const { data, error } = await supabase.from("courses").insert([course]).select().single()
+    if (error) {
+      console.error("[v0] Error adding course:", error)
+      return null
+    }
+    return data
+  } catch (error) {
+    console.error("[v0] Unexpected error adding course:", error)
+    return null
+  }
+}
+
+export const updateCourseInSupabase = async (courseId: string, updates: Partial<Course>): Promise<boolean> => {
+  try {
+    const { error } = await supabase.from("courses").update(updates).eq("id", courseId)
+    if (error) {
+      console.error("[v0] Error updating course:", error)
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error("[v0] Unexpected error updating course:", error)
+    return false
+  }
+}
+
+export const deleteCourseFromSupabase = async (courseId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase.from("courses").delete().eq("id", courseId)
+    if (error) {
+      console.error("[v0] Error deleting course:", error)
+      return false
+    }
+    // TODO: ensure cascading delete on student_courses/attendance or handle here.
+    return true
+  } catch (error) {
+    console.error("[v0] Unexpected error deleting course:", error)
+    return false
+  }
+}
+
 export const getStorageData = async (): Promise<AttendanceData> => {
-  const students = await getStudentsFromSupabase()
+  const [students, courses] = await Promise.all([getStudentsFromSupabase(), getCoursesFromSupabase()])
   return {
     students,
+    courses,
     lastUpdated: new Date().toISOString(),
   }
 }
