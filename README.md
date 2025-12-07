@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# منصة أكاديمية تأصيل – نظام متابعة الحضور
 
-## Getting Started
+منظومة داخلية لإدارة الدورات الشرعية والحضور، موجهة للمشرفين والمعلمين، بواجهة عربية كاملة (RTL)، مع ألوان إسلامية هادئة، ودعم كامل للجوال.
 
-First, run the development server:
+## المزايا الرئيسية
+- لوحات رئيسية منفصلة: الصفحة الرئيسية، الدورات، الطلاب، الإحصائيات.
+- CRUD كامل للدورات والطلاب مع نماذج حوارية واضحة.
+- حضور يومي ديناميكي لكل طالب ودورة، مع نسب والتزامات وإحصائيات.
+- تصميم موبايل أولاً مع شريط تنقل سفلي للجوال وشريط علوي لسطح المكتب.
+- شعار أكاديمية تأصيل (ta2seel.svg) مع أنيميشن دخول لطيف، وخط عربي واضح.
 
+## التقنية
+- Next.js 16 (App Router) + TypeScript + Turbopack
+- Tailwind CSS مع لوحة ألوان إسلامية (أخضر/محايد) وخطوط عربية مهيأة
+- shadcn/ui لعناصر مثل الأزرار، الحوارات، الجداول
+- Framer Motion لحركات دخول خفيفة
+- Supabase للبيانات (الدورات، الطلاب، الحضور)
+
+## المتطلبات
+- Node.js 18+ و npm
+- حساب Supabase (أو أي تكوين بيئة مطابق للمتغيرات أدناه)
+- متغيرات بيئة في `.env`:
+  - `NEXT_PUBLIC_SUPABASE_URL=...`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY=...`
+  - `SUPABASE_SERVICE_ROLE=...` // TODO: تأكد من تهيئة الدور الخدمي إذا لزم للتعديلات المحمية
+
+## التشغيل محلياً
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# زيارة: http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## أوامر مفيدة
+- `npm run lint` : فحص الشفرة.
+- `npm run build` : بناء إنتاجي (مستخدَم في CI/النشر).
+- `npm run dev` : تشغيل تطويري مع Turbopack.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## بنية المشروع (مختصرة)
+- `app/` صفحات App Router (home, courses, students, analytics).
+- `components/` مكونات UI (Navbar، BottomNav، الجداول، النماذج، الشعار).
+- `lib/` أنواع ودوال البيانات (Supabase storage، course-data).
+- `public/ta2seel.svg` شعار الأكاديمية.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## تدفق البيانات
+- السياق: `AttendanceProvider` يحمّل الطلاب/الدورات/الحضور من Supabase ويحدثها.
+- CRUD:
+  - الدورات: إضافة/تعديل/حذف تحفظ في Supabase وتُحدّث القوائم والاختيارات.
+  - الطلاب: حقول موسعة (الاسم، العمر، الجوال، البريد، المستحقات، الإنذارات، الملاحظات، الدورات). الإنشاء يتطلب دورة واحدة على الأقل.
+  - الحضور: تحديث حالة الطالب لكل تاريخ مع أسباب العذر.
 
-## Learn More
+## إرشادات الواجهة
+- RTL افتراضي، عناوين وخطوط عربية، تباعد مريح وبطاقات واضحة.
+- تنقل علوي لسطح المكتب + تنقل سفلي ثابت للجوال.
+- حركات خفيفة فقط (fade/slide قصيرة) بدون تشتيت.
 
-To learn more about Next.js, take a look at the following resources:
+## تحسينات الإنتاج
+- تأكد من تهيئة قواعد Supabase والجداول مع العلاقات (students, courses, student_courses, attendance) وإعداد تفويض آمن.
+- راجع الصلاحيات (Policies) بما يتوافق مع مفاتيح `anon` و `service_role`.
+- حدث `baseline-browser-mapping` إن لزم: `npm i baseline-browser-mapping@latest -D`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## المساهمة
+- حافظ على RTL والحروف العربية في النصوص الظاهرة.
+- أضف اختبارات أو لواحق لواجهة الإدارة عند إضافة ميزات CRUD جديدة.
+- نفّذ `npm run lint` و `npm run build` قبل فتح طلب دمج.
