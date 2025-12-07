@@ -1,35 +1,45 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from "next"
+import { Cairo, Noto_Naskh_Arabic } from "next/font/google"
+import "./globals.css"
+import { Navbar } from "@/components/navbar"
+import { ToastProvider } from "@/components/ui/toast-provider"
+import { BottomNav } from "@/components/bottom-nav"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const cairo = Cairo({
+  variable: "--font-base",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+})
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const naskh = Noto_Naskh_Arabic({
+  variable: "--font-heading",
+  subsets: ["arabic"],
+  weight: ["600", "700"],
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: "نظام تتبع الحضور",
-  description: "نظام ذكي لتتبع حضور وغياب طلاب شيخنا الفاضل أبو عبدالرحمن الأثري، مصمم بدقة لتسهيل تسجيل الحضور، الأعذار، والإحصائيات اليومية بطريقة منظمة وحديثة.",
+  description:
+    "نظام ذكي لتتبع حضور وغياب طلاب شيخنا الفاضل أبو عبدالرحمن الأثري، مصمم بدقة لتسهيل تسجيل الحضور، الأعذار، والإحصائيات اليومية بطريقة منظمة وحديثة.",
   generator: "عمل خالص لوجه الله تعالى",
 }
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html dir="rtl" lang="ar">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${cairo.variable} ${naskh.variable} antialiased`}>
+        <ToastProvider>
+          <Navbar />
+          <main className="pt-20 md:pt-24 pb-20 md:pb-0">{children}</main>
+          <BottomNav />
+        </ToastProvider>
       </body>
     </html>
-  );
+  )
 }

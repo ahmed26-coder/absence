@@ -2,19 +2,32 @@
 
 import type React from "react"
 import { useState } from "react"
+
 import type { Student } from "@/lib/types"
+import type { StudentCourseSummary } from "@/lib/course-data"
+import { getStudentStats } from "@/lib/storage"
 import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
 import { EditAttendanceModal } from "./edit-attendance-modal"
 
 interface StudentDetailsModalProps {
   isOpen: boolean
   student: Student
+  courseSummaries?: StudentCourseSummary[]
+  onNavigateToCourse?: (courseId: string) => void
   onClose: () => void
 }
 
-export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({ isOpen, student, onClose }) => {
+export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
+  isOpen,
+  student,
+  onClose,
+  courseSummaries,
+  onNavigateToCourse,
+}) => {
   const [showEditAttendance, setShowEditAttendance] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const stats = getStudentStats(student)
 
   const getStatusDisplay = (status: string | null) => {
     if (status === "H") return "حاضر"
@@ -44,39 +57,129 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({ isOpen
   return (
     <>
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-2xl shadow-lg max-h-96 overflow-y-auto">
-          <h2 className="text-xl font-bold mb-4">سجل الحضور - {student.name}</h2>
-
-          {attendanceRecords.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">لا توجد سجلات حضور</p>
-          ) : (
-            <div className="space-y-2">
-              {attendanceRecords.map(([date, record]) => (
-                <div
-                  key={date}
-                  className="flex justify-between items-center p-3 border border-gray-200 rounded hover:bg-gray-50"
-                >
-                  <div className="flex-1">
-                    <p className="font-semibold">{date}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`inline-block px-2 py-1 rounded text-sm ${getStatusColor(record.status)}`}>
-                        {getStatusDisplay(record.status)}
-                      </span>
-                      {record.reason && <span className="text-xs text-gray-600">السبب: {record.reason}</span>}
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => handleEditClick(date)}>
-                    تعديل
-                  </Button>
-                </div>
-              ))}
+        <div className="bg-white rounded-2xl p-6 md:p-7 w-full max-w-3xl shadow-lg max-h-[80vh] overflow-y-auto space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">سجل الحضور - {student.name}</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                عرض ملف الحضور، الدورات المسجل بها، وأحدث الجلسات
+              </p>
             </div>
-          )}
-
-          <div className="flex gap-2 justify-end mt-6">
             <Button type="button" variant="outline" onClick={onClose}>
               إغلاق
             </Button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl border border-border/60 bg-muted/40 p-4">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">عدد الدورات</p>
+              <p className="text-lg font-semibold text-foreground">{courseSummaries?.length || 0}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">نسبة الحضور الإجمالية</p>
+              <p className="text-lg font-semibold text-foreground">
+                {stats.presentPercentage}%
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">أحدث جلسة</p>
+              <p className="text-lg font-semibold text-foreground">
+                {Object.keys(student.attendance || {}).sort().slice(-1)[0] || "—"}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl border border-border/60 bg-white/70 p-4">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">العمر</p>
+              <p className="text-sm font-semibold text-foreground">{student.age ?? "—"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">المستحقات المالية</p>
+              <p className="text-sm font-semibold text-foreground">{student.debt ?? 0}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">عدد الإنذارات</p>
+              <p className="text-sm font-semibold text-foreground">{student.warnings ?? 0}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">الهاتف</p>
+              <p className="text-sm font-semibold text-foreground">{student.phone || "—"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">البريد الإلكتروني</p>
+              <p className="text-sm font-semibold text-foreground break-words">{student.email || "—"}</p>
+            </div>
+            <div className="space-y-1 sm:col-span-3">
+              <p className="text-xs text-muted-foreground">ملاحظات</p>
+              <p className="text-sm text-foreground leading-relaxed">{student.notes || "—"}</p>
+            </div>
+          </div>
+
+          {courseSummaries && courseSummaries.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">الدورات الملتحق بها</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {courseSummaries.map((course) => (
+                  <div
+                    key={course.courseId}
+                    className="rounded-xl border border-border/60 bg-gradient-to-br from-emerald-50/70 via-white to-amber-50/70 p-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{course.courseName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          جلسات مسجلة: {course.totalSessions || "—"}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onNavigateToCourse?.(course.courseId)}
+                        className="text-xs"
+                      >
+                        الذهاب للدورة
+                      </Button>
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      <Progress value={course.attendanceRate} className="h-2" />
+                      <p className="text-[11px] text-muted-foreground">
+                        نسبة الحضور: {course.attendanceRate}%
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">سجل الجلسات الأخيرة</h3>
+            {attendanceRecords.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">لا توجد سجلات حضور</p>
+            ) : (
+              <div className="space-y-2">
+                {attendanceRecords.map(([date, record]) => (
+                  <div
+                    key={date}
+                    className="flex justify-between items-center p-3 border border-gray-200 rounded hover:bg-gray-50"
+                  >
+                    <div className="flex-1">
+                      <p className="font-semibold">{date}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-block px-2.5 py-1 rounded text-sm ${getStatusColor(record.status)}`}>
+                          {getStatusDisplay(record.status)}
+                        </span>
+                        {record.reason && <span className="text-xs text-gray-600">السبب: {record.reason}</span>}
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => handleEditClick(date)}>
+                      تعديل
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -15,11 +15,16 @@
     "@supabase/supabase-js": "^2.76.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.23.25",
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.548.0",
+<<<<<<< HEAD
     "next": "16.0.0",
     "pdfmake": "^0.2.20",
+=======
+    "next": "^16.0.7",
+>>>>>>> 085cbdb07d320d33a2af3e1f52c0abc45d433e18
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "tailwind-merge": "^3.3.1"
@@ -29,6 +34,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "baseline-browser-mapping": "^2.9.4",
     "eslint": "^9",
     "eslint-config-next": "16.0.0",
     "tailwindcss": "^4",

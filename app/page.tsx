@@ -1,207 +1,159 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
-import { AttendanceProvider, useAttendance } from "@/components/attendance-context"
-import { AddStudentModal } from "@/components/add-student-modal"
-import { StudentCard } from "@/components/student-card"
-import { StudentListItem } from "@/components/student-list-item"
-import { DateRangeSelector } from "@/components/date-range-selector"
-import { StatisticsPanel } from "@/components/statistics-panel"
-import { ExportButton } from "@/components/export-button"
+import Link from "next/link"
+import { motion } from "framer-motion"
+import { Sparkles, ShieldCheck, BarChart3 } from "lucide-react"
+
+import { Ta2seelLogo } from "@/components/ta2seel-logo"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Users, Grid3x3, List } from "lucide-react"
 
-const AttendanceContent = () => {
-  const { data } = useAttendance()
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
-  const [viewMode, setViewMode] = useState<"list" | "card">(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("viewMode") as "list" | "card") || "card";
-    }
-    return "card";
-  });
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("viewMode", viewMode);
-    }
-  }, [viewMode]);
+const features = [
+  { title: "متابعة حضور الطلاب في الدورات", desc: "سجّل الحضور والغياب والأعذار بسهولة، مع عرض فوري لكل دورة." },
+  { title: "إحصائيات لكل طالب ولكل دورة", desc: "نسب حضور تفصيلية وبطاقات سريعة تساعد المعلمين والإدارة على المتابعة." },
+  { title: "واجهة عربية سهلة وبسيطة", desc: "تصميم RTL واضح، أزرار مباشرة، وتصفية سريعة للوصول للطالب أو الدورة." },
+]
 
-  const [startDate, setStartDate] = useState(() => {
-    const date = new Date()
-    date.setDate(date.getDate() - 30)
-    return date.toISOString().split("T")[0]
-  })
-  const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0])
-  const [currentPage, setCurrentPage] = useState(0)
-  const [filterDate, setFilterDate] = useState("")
-
-  const itemsPerPage = 15
-
-  const filteredStudents = useMemo(() => {
-    if (!filterDate) return data.students
-    return data.students.filter((student) => {
-      const record = student.attendance[filterDate]
-      return record !== undefined
-    })
-  }, [data.students, filterDate])
-
-  const paginatedStudents = useMemo(() => {
-    const start = currentPage * itemsPerPage
-    return filteredStudents.slice(start, start + itemsPerPage)
-  }, [filteredStudents, currentPage])
-
-  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage)
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
-            <Users size={32} />
-            نظام تتبع الحضور
-          </h1>
-          <p className="text-gray-600">إدارة حضور الطلاب بسهولة وكفاءة</p>
-        </div>
-
-        {/* Controls */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">التاريخ الحالي</label>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => {
-                  setSelectedDate(e.target.value)
-                  setCurrentPage(0)
-                }}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">تصفية حسب التاريخ</label>
-              <Input
-                type="date"
-                value={filterDate}
-                onChange={(e) => {
-                  setFilterDate(e.target.value)
-                  setCurrentPage(0)
-                }}
-                placeholder="اختر تاريخ للتصفية"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <DateRangeSelector
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
-            />
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setViewMode("card")}
-                variant={viewMode === "card" ? "default" : "outline"}
-                size="sm"
-              >
-                <Grid3x3 size={16} />
-              </Button>
-              <Button
-                onClick={() => setViewMode("list")}
-                variant={viewMode === "list" ? "default" : "outline"}
-                size="sm"
-              >
-                <List size={16} />
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Statistics */}
-        <StatisticsPanel students={filteredStudents} startDate={startDate} endDate={endDate} />
-
-        {/* Export and Add Student */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between">
-          <Button onClick={() => setIsModalOpen(true)} size="lg">
-            <Users size={18} className="ml-2" />
-            إضافة طالب جديد
-          </Button>
-          <ExportButton students={filteredStudents} startDate={startDate} endDate={endDate} />
-        </div>
-
-        {/* Students Display */}
-        <div className={viewMode === "card" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" : ""}>
-          {paginatedStudents.map((student) =>
-            viewMode === "card" ? (
-              <StudentCard
-                key={student.id}
-                student={student}
-                selectedDate={selectedDate}
-                startDate={startDate}
-                endDate={endDate}
-              />
-
-            ) : (
-              <StudentListItem key={student.id} student={student} selectedDate={selectedDate} />
-            ),
-          )}
-        </div>
-
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center gap-2 mt-6">
-            <Button
-              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-              disabled={currentPage === 0}
-              variant="outline"
-            >
-              السابق
-            </Button>
-            <div className="flex items-center gap-2">
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <Button
-                  key={i}
-                  onClick={() => setCurrentPage(i)}
-                  variant={currentPage === i ? "default" : "outline"}
-                  size="sm"
-                >
-                  {i + 1}
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-amber-50">
+      <main className="mx-auto flex max-w-6xl flex-col gap-16 px-4 pb-16 pt-28 md:px-8 md:pt-32">
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="relative overflow-hidden rounded-3xl border border-border/60 bg-white/90 p-8 shadow-md backdrop-blur"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.08),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(245,158,11,0.08),transparent_30%)]" />
+          <div className="relative grid gap-8 md:grid-cols-[1.1fr,0.9fr] md:items-center">
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                <Ta2seelLogo animated size="hero" />
+                <div>
+                  <p className="text-sm font-bold text-foreground">اكاديمية تأصيل للعلوم الشرعية</p>
+                  <p className="text-xs text-muted-foreground">نظام متابعة الحضور</p>
+                </div>
+              </div>
+              <h1 className="text-4xl font-black leading-snug text-foreground md:text-5xl">
+                منصة عربية لمتابعة الحضور والإحصائيات للمدرسين والإدارة
+              </h1>
+              <p className="text-base leading-relaxed text-muted-foreground md:text-lg">
+                متابعة حضور الطلاب في الدورات الشرعية، إحصائيات، تنظيم، وسهولة استخدام لفرق التدريس والإدارة مع دعم كامل
+                للغة العربية وواجهة RTL.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button asChild size="lg" className="gap-2 px-6 py-3">
+                  <Link href="/courses">
+                    <Sparkles size={18} />
+                    البدء في إدارة الدورات
+                  </Link>
                 </Button>
-              ))}
+                <Button asChild variant="outline" size="lg" className="px-5 py-3">
+                  <Link href="/students">الانتقال لقائمة الطلاب</Link>
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary">إحصائيات مباشرة</span>
+                <span className="rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-800">دعم RTL كامل</span>
+                <span className="rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-800">تصميم مخصص</span>
+              </div>
             </div>
-            <Button
-              onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-              disabled={currentPage === totalPages - 1}
-              variant="outline"
-            >
-              التالي
-            </Button>
+            <div className="relative rounded-2xl border border-border/60 bg-white/80 p-6 shadow-sm">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(16,185,129,0.05),transparent_35%)]" />
+              <div className="relative grid gap-4">
+                <div className="flex items-center justify-between rounded-xl border border-border/60 bg-primary/10 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-primary">الحضور اليومي</p>
+                    <p className="text-xs text-muted-foreground">تسجيل سريع لكل دورة</p>
+                  </div>
+                  <ShieldCheck size={24} className="text-primary" />
+                </div>
+                <div className="rounded-xl border border-border/60 bg-white/90 p-4 shadow-xs">
+                  <p className="text-sm font-semibold text-foreground mb-2">مقتطف الإحصائيات</p>
+                  <div className="grid grid-cols-3 gap-3 text-xs font-semibold text-muted-foreground">
+                    <div className="rounded-lg bg-emerald-50 px-3 py-2">
+                      <p>حضور</p>
+                      <p className="text-lg font-bold text-emerald-700">92%</p>
+                    </div>
+                    <div className="rounded-lg bg-amber-50 px-3 py-2">
+                      <p>غياب</p>
+                      <p className="text-lg font-bold text-amber-700">6%</p>
+                    </div>
+                    <div className="rounded-lg bg-sky-50 px-3 py-2">
+                      <p>أعذار</p>
+                      <p className="text-lg font-bold text-sky-700">2%</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+                  <div className="rounded-lg border border-border/60 bg-white/80 px-3 py-2 shadow-xs">
+                    <p className="font-semibold text-foreground">عدد الطلاب</p>
+                    <p className="text-lg font-bold text-primary">+120</p>
+                  </div>
+                  <div className="rounded-lg border border-border/60 bg-white/80 px-3 py-2 shadow-xs">
+                    <p className="font-semibold text-foreground">عدد الدورات</p>
+                    <p className="text-lg font-bold text-emerald-700">18</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+        </motion.section>
 
-        {/* Empty State */}
-        {data.students.length === 0 && (
-          <div className="text-center py-12">
-            <Users size={48} className="mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-600 mb-4">لا توجد طلاب حتى الآن</p>
-            <Button onClick={() => setIsModalOpen(true)}>إضافة أول طالب</Button>
+        <section className="space-y-6">
+          <div className="space-y-2 text-center">
+            <p className="text-xs font-semibold text-emerald-700">لمحة سريعة</p>
+            <h2 className="text-2xl font-bold text-foreground">كيف يساعد النظام المدرسين والإدارة؟</h2>
+            <p className="text-sm text-muted-foreground">
+              تنظيم حضور الطلاب، استخراج إحصائيات مباشرة، وتبسيط سير العمل اليومي دون تعقيد.
+            </p>
           </div>
-        )}
-      </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {features.map((feature, idx) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.35, delay: idx * 0.05 }}
+                className="rounded-2xl border border-border/60 bg-white/85 p-4 shadow-sm backdrop-blur"
+              >
+                <p className="text-base font-bold text-foreground">{feature.title}</p>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
 
-      <AddStudentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+        <section className="rounded-3xl border border-border/60 bg-white/90 p-6 shadow-sm backdrop-blur">
+          <div className="grid gap-4 md:grid-cols-[1.2fr,0.8fr] md:items-center">
+            <div className="space-y-3">
+              <h3 className="text-xl font-semibold text-foreground">فوائد مباشرة للمدرسين والإدارة</h3>
+              <ul className="list-disc space-y-2 pr-5 text-sm text-muted-foreground leading-relaxed">
+                <li>تسجيل حضور سريع دون أوراق.</li>
+                <li>عرض نسب الحضور لكل دورة مع إمكانية التعديل الفوري.</li>
+                <li>واجهة عربية واضحة مع دعم كامل للأجهزة المحمولة.</li>
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-4 shadow-inner">
+              <div className="flex items-center gap-3">
+                <BarChart3 className="text-primary" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">جاهز للبدء</p>
+                  <p className="text-xs text-muted-foreground">جرّب لوحة الدورات وابدأ التسجيل فوراً</p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button asChild className="px-5">
+                  <Link href="/courses">لوحة الدورات</Link>
+                </Button>
+                <Button asChild variant="outline" className="px-5">
+                  <Link href="/analytics">عرض الإحصائيات</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
-  )
-}
-
-export default function Home() {
-  return (
-    <AttendanceProvider>
-      <AttendanceContent />
-    </AttendanceProvider>
   )
 }
