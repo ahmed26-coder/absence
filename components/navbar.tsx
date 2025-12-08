@@ -52,7 +52,13 @@ export const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon-sm" className="hidden md:inline-flex">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="hidden md:inline-flex"
+            disabled
+            aria-label="الإعدادات ستتوفر قريباً"
+          >
             <Settings size={18} />
           </Button>
           <Button

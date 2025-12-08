@@ -20,10 +20,30 @@ const naskh = Noto_Naskh_Arabic({
 })
 
 export const metadata: Metadata = {
-  title: "نظام تتبع الحضور",
+  title: "اكاديمية تأصيل للعلوم الشرعية – نظام متابعة الحضور",
   description:
-    "نظام ذكي لتتبع حضور وغياب طلاب شيخنا الفاضل أبو عبدالرحمن الأثري، مصمم بدقة لتسهيل تسجيل الحضور، الأعذار، والإحصائيات اليومية بطريقة منظمة وحديثة.",
-  generator: "عمل خالص لوجه الله تعالى",
+    "نظام عربي لمتابعة حضور الطلاب في الدورات الشرعية، مع إحصائيات لكل طالب ولكل دورة، مصمم لسهولة استخدام المعلمين والإدارة.",
+  applicationName: "اكاديمية تأصيل",
+  metadataBase: new URL("https://ta2seel.example.com"), // TODO: replace with real domain
+  keywords: ["اكاديمية تأصيل", "نظام متابعة الحضور", "حضور الطلاب", "دورات شرعية", "تعليم شرعي"],
+  authors: [{ name: "Akademiyat Ta2seel" }],
+  openGraph: {
+    type: "website",
+    url: "https://ta2seel.example.com",
+    title: "اكاديمية تأصيل – نظام متابعة الحضور",
+    description: "منصة لمتابعة حضور طلاب الدورات الشرعية مع إحصائيات واضحة وسهلة.",
+    siteName: "اكاديمية تأصيل",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "اكاديمية تأصيل – نظام متابعة الحضور",
+    description: "منصة عربية لمتابعة حضور طلاب الدورات الشرعية.",
+  },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 }
 
 export default function RootLayout({

@@ -1,8 +1,11 @@
-import { supabase } from "./supabase"
-import type { AttendanceData, Student, AttendanceStatus, Course } from "./types"
+import { getSupabaseClient } from "./supabase"
+import type { AttendanceData, AttendanceRecord, AttendanceStatus, Course, Student } from "./types"
 
 export const getStudentsFromSupabase = async (): Promise<Student[]> => {
   try {
+    const supabase = getSupabaseClient()
+    if (!supabase) return []
+
     const { data, error } = await supabase.from("students").select("*")
 
     if (error) {
@@ -26,12 +29,13 @@ export const getStudentsFromSupabase = async (): Promise<Student[]> => {
           console.error("[v0] Error fetching student_courses:", courseError)
         }
 
-        const attendance: Record<string, { status: AttendanceStatus; reason?: string }> = {}
+        const attendance: Record<string, AttendanceRecord> = {}
         ;(attendanceData || []).forEach((record) => {
           const status = record.status === "present" ? "H" : record.status === "absent" ? "G" : "E"
           attendance[record.date] = {
             status: status as AttendanceStatus,
             reason: record.reason || undefined,
+            date: record.date,
           }
         })
 
@@ -54,6 +58,9 @@ export const addStudentToSupabase = async (
   payload: Pick<Student, "name"> & Partial<Student> & { courses: string[] },
 ): Promise<Student | null> => {
   try {
+    const supabase = getSupabaseClient()
+    if (!supabase) return null
+
     const { name, courses, ...rest } = payload
     const { data, error } = await supabase
       .from("students")
@@ -85,6 +92,9 @@ export const addStudentToSupabase = async (
 
 export const deleteStudentFromSupabase = async (studentId: string): Promise<boolean> => {
   try {
+    const supabase = getSupabaseClient()
+    if (!supabase) return false
+
     // Delete attendance records first
     const { error: attendanceError } = await supabase.from("attendance").delete().eq("student_id", studentId)
 
@@ -119,6 +129,9 @@ export const updateStudentInSupabase = async (
   updates: Partial<Omit<Student, "id" | "attendance">> & { courses?: string[] },
 ): Promise<boolean> => {
   try {
+    const supabase = getSupabaseClient()
+    if (!supabase) return false
+
     const { courses, ...rest } = updates
     const { error } = await supabase.from("students").update(rest).eq("id", studentId)
 
@@ -156,6 +169,9 @@ export const updateAttendanceInSupabase = async (
   reason?: string,
 ): Promise<boolean> => {
   try {
+    const supabase = getSupabaseClient()
+    if (!supabase) return false
+
     if (status === null) {
       // Delete attendance record
       const { error } = await supabase.from("attendance").delete().eq("student_id", studentId).eq("date", date)
@@ -196,6 +212,9 @@ export const updateAttendanceInSupabase = async (
 
 export const getCoursesFromSupabase = async (): Promise<Course[]> => {
   try {
+    const supabase = getSupabaseClient()
+    if (!supabase) return []
+
     const { data, error } = await supabase.from("courses").select("*")
     if (error) {
       console.error("[v0] Error fetching courses:", error)
@@ -210,6 +229,9 @@ export const getCoursesFromSupabase = async (): Promise<Course[]> => {
 
 export const addCourseToSupabase = async (course: Course): Promise<Course | null> => {
   try {
+    const supabase = getSupabaseClient()
+    if (!supabase) return null
+
     const { data, error } = await supabase.from("courses").insert([course]).select().single()
     if (error) {
       console.error("[v0] Error adding course:", error)
@@ -224,6 +246,9 @@ export const addCourseToSupabase = async (course: Course): Promise<Course | null
 
 export const updateCourseInSupabase = async (courseId: string, updates: Partial<Course>): Promise<boolean> => {
   try {
+    const supabase = getSupabaseClient()
+    if (!supabase) return false
+
     const { error } = await supabase.from("courses").update(updates).eq("id", courseId)
     if (error) {
       console.error("[v0] Error updating course:", error)
@@ -238,6 +263,9 @@ export const updateCourseInSupabase = async (courseId: string, updates: Partial<
 
 export const deleteCourseFromSupabase = async (courseId: string): Promise<boolean> => {
   try {
+    const supabase = getSupabaseClient()
+    if (!supabase) return false
+
     const { error } = await supabase.from("courses").delete().eq("id", courseId)
     if (error) {
       console.error("[v0] Error deleting course:", error)

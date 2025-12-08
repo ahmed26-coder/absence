@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import type { Student } from "@/lib/types"
+import type { AttendanceStatus, Student } from "@/lib/types"
 import { useAttendance } from "./attendance-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +17,7 @@ interface EditAttendanceModalProps {
 export const EditAttendanceModal: React.FC<EditAttendanceModalProps> = ({ isOpen, student, date, onClose }) => {
   const { updateAttendance } = useAttendance()
   const record = student.attendance[date]
-  const [status, setStatus] = useState<string | null>(record?.status || null)
+  const [status, setStatus] = useState<AttendanceStatus>(record?.status || null)
   const [reason, setReason] = useState(record?.reason || "")
 
   useEffect(() => {

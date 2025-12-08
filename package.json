@@ -19,12 +19,8 @@
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.548.0",
-<<<<<<< HEAD
-    "next": "16.0.0",
-    "pdfmake": "^0.2.20",
-=======
     "next": "^16.0.7",
->>>>>>> 085cbdb07d320d33a2af3e1f52c0abc45d433e18
+    "pdfmake": "^0.2.20",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "tailwind-merge": "^3.3.1"

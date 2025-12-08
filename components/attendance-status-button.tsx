@@ -5,10 +5,11 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import type { AttendanceStatus } from "@/lib/types"
 
 interface AttendanceStatusButtonProps {
-  status: string | null
-  onStatusChange: (status: string | null, reason?: string) => void
+  status: AttendanceStatus
+  onStatusChange: (status: AttendanceStatus, reason?: string) => void
   date: string
   currentReason?: string
 }
@@ -25,14 +26,14 @@ export const AttendanceStatusButton: React.FC<AttendanceStatusButtonProps> = ({
     setReason(currentReason || "")
   }, [currentReason])
 
-  const getStatusColor = (s: string | null) => {
+  const getStatusColor = (s: AttendanceStatus) => {
     if (s === "H") return " hover:bg-green-600"
     if (s === "G") return " hover:bg-red-600"
     if (s === "E") return " hover:bg-yellow-600"
     return "bg-gray-200 hover:bg-gray-300"
   }
 
-  const handleStatusClick = (newStatus: string) => {
+  const handleStatusClick = (newStatus: AttendanceStatus) => {
     if (status === newStatus) {
       onStatusChange(null)
       setShowReasonInput(false)

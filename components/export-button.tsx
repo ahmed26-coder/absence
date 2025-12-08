@@ -11,37 +11,14 @@ export const ExportButton: React.FC<{ students: Student[]; startDate: string; en
   endDate,
 }) => {
   const exportToPDF = async () => {
-    const pdfMakeModule = await import("/fonts/Amiri-Regular.ttf")
-    const pdfFontsModule = await import("/fonts/Amiri-Regular.ttf")
+    const pdfMakeModule = await import("pdfmake/build/pdfmake")
+    const pdfFontsModule = await import("pdfmake/build/vfs_fonts")
 
     const pdfMake = pdfMakeModule.default || pdfMakeModule
     const pdfFonts = pdfFontsModule.default || pdfFontsModule
 
-    // ✅ تحميل الخط العربي من public
-    const fontUrl = "/fonts/Amiri-Regular.ttf"
-    const response = await fetch(fontUrl)
-    if (!response.ok) {
-      console.error("❌ لم يتم العثور على الخط:", fontUrl)
-      alert("لم يتم العثور على ملف الخط Amiri-Regular.ttf في مجلد public/fonts/")
-      return
-    }
-
-    const fontBytes = await response.arrayBuffer()
-    const base64Font = btoa(String.fromCharCode(...new Uint8Array(fontBytes)))
-
-    pdfMake.vfs = {
-      ...(pdfFonts.vfs || pdfFonts.pdfMake?.vfs),
-      "Amiri-Regular.ttf": base64Font,
-    }
-
-    pdfMake.fonts = {
-      Amiri: {
-        normal: "Amiri-Regular.ttf",
-        bold: "Amiri-Regular.ttf",
-        italics: "Amiri-Regular.ttf",
-        bolditalics: "Amiri-Regular.ttf",
-      },
-    }
+    // use bundled vfs fonts; TODO: add Arabic-friendly font via public/fonts when available
+    pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs
 
     const body = [
       [
@@ -80,7 +57,7 @@ export const ExportButton: React.FC<{ students: Student[]; startDate: string; en
         header: { fontSize: 18, bold: true },
       },
       defaultStyle: {
-        font: "Amiri",
+        font: "Helvetica",
         alignment: "right",
       },
     }
