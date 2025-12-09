@@ -58,17 +58,23 @@ export const StudentForm: React.FC<StudentFormProps> = ({
   const isEdit = Boolean(initialData?.id)
 
   useEffect(() => {
-    if (!open) return
-    setName(initialData?.name || "")
-    setPhone(initialMeta?.phone || "")
-    setEmail(initialMeta?.email || "")
-    setNotes(initialMeta?.notes || "")
-    setAge(initialMeta?.age ?? initialData?.age)
-    setDebt(initialMeta?.debt ?? initialData?.debt)
-    setWarnings(initialMeta?.warnings ?? initialData?.warnings)
-    setCourseIds(initialMeta?.courseIds || initialData?.courses || [])
-    setCourseError(null)
-  }, [initialData, initialMeta, open])
+    if (!open) return;
+    const merged = {
+      ...initialData,
+      ...initialMeta
+    };
+
+    setName(merged.name || "");
+    setPhone(merged.phone || "");
+    setEmail(merged.email || "");
+    setNotes(merged.notes || "");
+    setAge(merged.age);
+    setDebt(merged.debt);
+    setWarnings(merged.warnings);
+    setCourseIds(merged.courses || merged.courseIds || []);
+    setCourseError(null);
+  }, [initialData, initialMeta, open]);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -100,6 +106,17 @@ export const StudentForm: React.FC<StudentFormProps> = ({
     })
   }
 
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   return (
     <Dialog
       open={open}
@@ -107,38 +124,39 @@ export const StudentForm: React.FC<StudentFormProps> = ({
       title={isEdit ? "تعديل بيانات الطالب" : "إضافة طالب جديد"}
       description="أدخل بيانات الطالب واختر الدورات المنضم إليها."
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <label className="form-label">اسم الطالب *</label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="اسم الطالب" />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="md:max-w-xl max-w-lg w-full max-h-[60vh] md:max-h-[70vh] overflow-y-auto px-1 py-4 scrollbar-custom">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="form-label">العمر</label>
-            <Input
-              type="number"
-              value={age ?? ""}
-              onChange={(e) => setAge(e.target.value ? Number(e.target.value) : undefined)}
-              placeholder="مثال: 20"
-              min={0}
-            />
+            <label className="form-label">اسم الطالب *</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="اسم الطالب" />
           </div>
-          <div className="space-y-2">
-            <label className="form-label">عدد الإنذارات</label>
-            <Input
-              type="number"
-              value={warnings ?? ""}
-              onChange={(e) => setWarnings(e.target.value ? Number(e.target.value) : undefined)}
-              placeholder="0"
-              min={0}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="form-label">العمر</label>
+              <Input
+                type="number"
+                value={age ?? ""}
+                onChange={(e) => setAge(e.target.value ? Number(e.target.value) : undefined)}
+                placeholder="مثال: 20"
+                min={0}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="form-label">عدد الإنذارات</label>
+              <Input
+                type="number"
+                value={warnings ?? ""}
+                onChange={(e) => setWarnings(e.target.value ? Number(e.target.value) : undefined)}
+                placeholder="0"
+                min={0}
+              />
+            </div>
           </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <label className="form-label">رقم الجوال</label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" />
-          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="form-label">رقم الجوال</label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" />
+            </div>
             <div className="space-y-2">
               <label className="form-label">المستحقات المالية</label>
               <Input
@@ -150,49 +168,49 @@ export const StudentForm: React.FC<StudentFormProps> = ({
                 step="0.1"
               />
             </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <label className="form-label">البريد الإلكتروني</label>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="form-label">البريد الإلكتروني</label>
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" />
+            </div>
+            <div className="space-y-2">
+              <label className="form-label">ملاحظات</label>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات داخلية" />
+            </div>
           </div>
           <div className="space-y-2">
-            <label className="form-label">ملاحظات</label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات داخلية" />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <label className="form-label">إسناد إلى دورات *</label>
-          <div className="flex flex-wrap gap-2 rounded-xl border border-border/60 bg-muted/40 p-3">
-            {courseOptions.map((course) => {
-              const selected = courseIds.includes(course.id)
-              return (
-                <button
-                  key={course.id}
-                  type="button"
-                  onClick={() => toggleCourse(course.id)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                    selected
+            <label className="form-label">إسناد إلى دورات *</label>
+            <div className="flex flex-wrap gap-2 rounded-xl border border-border/60 bg-muted/40 p-3">
+              {courseOptions.map((course) => {
+                const selected = courseIds.includes(course.id)
+                return (
+                  <button
+                    key={course.id}
+                    type="button"
+                    onClick={() => toggleCourse(course.id)}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${selected
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-white text-muted-foreground hover:border-primary/50"
-                  }`}
-                >
-                  {course.name}
-                </button>
-              )
-            })}
+                      }`}
+                  >
+                    {course.name}
+                  </button>
+                )
+              })}
+            </div>
+            {courseError && <p className="text-xs font-semibold text-red-600">{courseError}</p>}
           </div>
-          {courseError && <p className="text-xs font-semibold text-red-600">{courseError}</p>}
-        </div>
-        <div className="flex items-center justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose}>
-            إلغاء
-          </Button>
-          <Button type="submit" disabled={!name.trim()}>
-            {isEdit ? "حفظ التعديلات" : "إضافة الطالب"}
-          </Button>
-        </div>
-      </form>
+          <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              إلغاء
+            </Button>
+            <Button type="submit" disabled={!name.trim()}>
+              {isEdit ? "حفظ التعديلات" : "إضافة الطالب"}
+            </Button>
+          </div>
+        </form>
+      </div>
     </Dialog>
   )
 }

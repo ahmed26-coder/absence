@@ -1,95 +1,101 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client"
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Loader2 } from "lucide-react"
+import type { AttendanceStatus } from "@/lib/types"
 
 interface AttendanceStatusButtonProps {
-  status: string | null
-  onStatusChange: (status: string | null, reason?: string) => void
+  status: AttendanceStatus | null
+  onStatusChange: (status: AttendanceStatus | "E" | null, reason?: string) => Promise<void>
   date: string
   currentReason?: string
+  isLoading?: boolean
 }
 
 export const AttendanceStatusButton: React.FC<AttendanceStatusButtonProps> = ({
   status,
   onStatusChange,
   currentReason,
+  isLoading = false,
 }) => {
   const [showReasonInput, setShowReasonInput] = useState(status === "E")
   const [reason, setReason] = useState(currentReason || "")
+  const [pendingStatus, setPendingStatus] = useState<AttendanceStatus | "E" | null>(null)
 
   useEffect(() => {
     setReason(currentReason || "")
   }, [currentReason])
 
-  const getStatusColor = (s: string | null) => {
-    if (s === "H") return " hover:bg-green-600"
-    if (s === "G") return " hover:bg-red-600"
-    if (s === "E") return " hover:bg-yellow-600"
-    return "bg-gray-200 hover:bg-gray-300"
-  }
+  const handleStatusClick = async (newStatus: AttendanceStatus | "E") => {
+    if (isLoading || pendingStatus) return
 
-  const handleStatusClick = (newStatus: string) => {
-    if (status === newStatus) {
-      onStatusChange(null)
-      setShowReasonInput(false)
-      setReason("")
-    } else {
-      onStatusChange(newStatus, newStatus === "E" ? reason : undefined)
-      setShowReasonInput(newStatus === "E")
+    setPendingStatus(newStatus)
+
+    try {
+      if (status === newStatus) {
+        await onStatusChange(null)
+        setShowReasonInput(false)
+        setReason("")
+      } else {
+        setShowReasonInput(newStatus === "E")
+        await onStatusChange(newStatus, newStatus === "E" ? reason : undefined)
+      }
+    } catch {
+      console.error("فشل تحديث الحالة")
+    } finally {
+      setPendingStatus(null)
     }
   }
 
-  const handleReasonChange = (newReason: string) => {
-    setReason(newReason)
-    if (status === "E") {
-      onStatusChange("E", newReason)
-    }
-  }
-
-  const handleReasonBlur = () => {
-    if (reason.trim()) {
-      setShowReasonInput(false)
-    }
-  }
+  const isButtonLoading = (btn: AttendanceStatus | "E") => pendingStatus === btn
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex gap-1">
+        {/* حاضر */}
         <Button
           size="sm"
-          className={`${getStatusColor(status === "H" ? "H" : null)} text-white bg-green-500 hover:bg-green-600`}
+          className="text-white bg-green-500 hover:bg-green-600 flex items-center gap-2"
           onClick={() => handleStatusClick("H")}
+          disabled={pendingStatus !== null}
         >
-          حاضر
+          {isButtonLoading("H") && <Loader2 className="animate-spin w-4 h-4" />}
+          <span>حاضر</span>
         </Button>
+
+        {/* غياب */}
         <Button
           size="sm"
-          className={`${getStatusColor(status === "G" ? "G" : null)} text-white bg-red-500 hover:bg-red-600 `}
+          className="text-white bg-red-500 hover:bg-red-600 flex items-center gap-2"
           onClick={() => handleStatusClick("G")}
+          disabled={pendingStatus !== null}
         >
-          غياب
+          {isButtonLoading("G") && <Loader2 className="animate-spin w-4 h-4" />}
+          <span>غياب</span>
         </Button>
+
+        {/* عذر */}
         <Button
           size="sm"
-          className={`${getStatusColor(status === "E" ? "E" : null)} text-white bg-yellow-500 hover:bg-yellow-600`}
+          className="text-white bg-yellow-500 hover:bg-yellow-600 flex items-center gap-2"
           onClick={() => handleStatusClick("E")}
+          disabled={pendingStatus !== null}
         >
-          عذر
+          {isButtonLoading("E") && <Loader2 className="animate-spin w-4 h-4" />}
+          <span>عذر</span>
         </Button>
       </div>
+
       {showReasonInput && (
         <Input
           type="text"
           placeholder="سبب الغياب"
           value={reason}
-          onChange={(e) => handleReasonChange(e.target.value)}
-          onBlur={handleReasonBlur}
+          onChange={(e) => setReason(e.target.value)}
           className="text-sm"
-          autoFocus
+          disabled={pendingStatus !== null}
         />
       )}
     </div>

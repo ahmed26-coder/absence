@@ -1,9 +1,9 @@
 export type AttendanceStatus = "H" | "G" | "E" | null
 
 export interface AttendanceRecord {
-  date: string
   status: AttendanceStatus
   reason?: string
+  date?: string
 }
 
 export interface Student {

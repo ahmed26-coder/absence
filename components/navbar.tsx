@@ -14,6 +14,7 @@ const links = [
   { href: "/courses", label: "الدورات" },
   { href: "/students", label: "الطلاب" },
   { href: "/analytics", label: "الإحصائيات" },
+  { href: "/debts", label: "الديون" },
 ]
 
 export const Navbar = () => {
@@ -33,7 +34,7 @@ export const Navbar = () => {
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-1 text-sm font-semibold md:flex">
+        <nav className="hidden items-center gap-2 text-sm font-semibold md:flex">
           {links.map((item) => {
             const active = pathname === item.href
             return (
@@ -52,13 +53,19 @@ export const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon-sm" className="hidden md:inline-flex">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="hidden md:inline-flex"
+            disabled
+            aria-label="الإعدادات ستتوفر قريباً"
+          >
             <Settings size={18} />
           </Button>
           <Button
             variant="outline"
             size="icon-sm"
-            className="md:hidden"
+            className="hidden"
             onClick={() => setOpen((prev) => !prev)}
             aria-label="فتح القائمة"
           >

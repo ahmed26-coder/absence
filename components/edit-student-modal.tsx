@@ -97,102 +97,103 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, stud
       description="حرر بيانات التواصل والبيانات المالية وسجل الحضور لليوم."
       className="max-w-2xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label>اسم الطالب</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="اسم الطالب" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>رقم الجوال</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>البريد الإلكتروني</Label>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>العمر</Label>
-            <Input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="مثال: 18" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>المستحقات المالية</Label>
-            <Input
-              type="number"
-              value={debt}
-              onChange={(e) => setDebt(e.target.value)}
-              placeholder="القيمة بالريال"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>الإنذارات</Label>
-            <Input
-              type="number"
-              value={warnings}
-              min={0}
-              onChange={(e) => setWarnings(e.target.value)}
-              placeholder="عدد الإنذارات"
-            />
-          </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label>ملاحظات</Label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات داخلية" />
-          </div>
-        </div>
-
-        <div className="space-y-2 rounded-xl border border-border/60 bg-muted/40 p-3">
-          <Label className="flex items-center gap-2 text-sm font-semibold">
-            حالة اليوم ({today})
-            <span className="text-xs text-muted-foreground">سجّل حالة الطالب لهذا التاريخ</span>
-          </Label>
-          <div className="flex flex-wrap gap-3">
-            {[
-              { value: "H", label: "حاضر", tone: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-              { value: "G", label: "غياب", tone: "bg-red-50 text-red-700 border-red-200" },
-              { value: "E", label: "عذر", tone: "bg-amber-50 text-amber-700 border-amber-200" },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setStatus(opt.value as AttendanceStatus)}
-                className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                  status === opt.value ? `${opt.tone} ring-2 ring-offset-1` : "bg-white text-muted-foreground"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          {status === "E" && (
+      <div className="md:max-w-xl max-w-lg w-full max-h-[60vh] md:max-h-[70vh] overflow-y-auto px-1 py-4 scrollbar-custom">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>سبب العذر</Label>
+              <Label>اسم الطالب</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="اسم الطالب" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>رقم الجوال</Label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>البريد الإلكتروني</Label>
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>العمر</Label>
+              <Input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="مثال: 18" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>المستحقات المالية</Label>
               <Input
-                type="text"
-                placeholder="مثلاً: مرض - سفر - ظرف عائلي"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                type="number"
+                value={debt}
+                onChange={(e) => setDebt(e.target.value)}
+                placeholder="القيمة بالريال"
               />
             </div>
-          )}
-        </div>
+            <div className="space-y-1.5">
+              <Label>الإنذارات</Label>
+              <Input
+                type="number"
+                value={warnings}
+                min={0}
+                onChange={(e) => setWarnings(e.target.value)}
+                placeholder="عدد الإنذارات"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>ملاحظات</Label>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات داخلية" />
+            </div>
+          </div>
 
-        <div className="grid grid-cols-1 gap-2 rounded-xl border border-border/60 bg-white/70 p-3 text-sm text-muted-foreground sm:grid-cols-3">
-          <p>إجمالي الأيام المسجلة: {stats.present + stats.absent + stats.excused}</p>
-          <p>الحضور: {stats.present}</p>
-          <p>الغياب: {stats.absent}</p>
-          <p>الأعذار: {stats.excused}</p>
-        </div>
+          <div className="space-y-2 rounded-xl border border-border/60 bg-muted/40 p-3">
+            <Label className="flex items-center gap-2 text-sm font-semibold">
+              حالة اليوم ({today})
+              <span className="text-xs text-muted-foreground">سجّل حالة الطالب لهذا التاريخ</span>
+            </Label>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { value: "H", label: "حاضر", tone: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+                { value: "G", label: "غياب", tone: "bg-red-50 text-red-700 border-red-200" },
+                { value: "E", label: "عذر", tone: "bg-amber-50 text-amber-700 border-amber-200" },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setStatus(opt.value as AttendanceStatus)}
+                  className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${status === opt.value ? `${opt.tone} ring-2 ring-offset-1` : "bg-white text-muted-foreground"
+                    }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
 
-        <div className="flex gap-2 justify-end">
-          <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
-            إلغاء
-          </Button>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "جاري الحفظ..." : "حفظ التعديلات"}
-          </Button>
-        </div>
-      </form>
+            {status === "E" && (
+              <div className="space-y-1.5">
+                <Label>سبب العذر</Label>
+                <Input
+                  type="text"
+                  placeholder="مثلاً: مرض - سفر - ظرف عائلي"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 rounded-xl border border-border/60 bg-white/70 p-3 text-sm text-muted-foreground sm:grid-cols-3">
+            <p>إجمالي الأيام المسجلة: {stats.present + stats.absent + stats.excused}</p>
+            <p>الحضور: {stats.present}</p>
+            <p>الغياب: {stats.absent}</p>
+            <p>الأعذار: {stats.excused}</p>
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
+              إلغاء
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "جاري الحفظ..." : "حفظ التعديلات"}
+            </Button>
+          </div>
+        </form>
+      </div>
     </Dialog>
   )
 }

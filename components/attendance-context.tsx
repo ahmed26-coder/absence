@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useCallback, useEffect } from "react"
-import type { AttendanceData, Student, Course } from "@/lib/types"
+import type { AttendanceData, Student, Course, AttendanceStatus } from "@/lib/types"
 import {
   getStorageData,
   addStudentToSupabase,
@@ -17,14 +17,17 @@ import {
 interface AttendanceContextType {
   data: AttendanceData
   addStudent: (payload: Pick<Student, "name"> & Partial<Student> & { courses: string[] }) => Promise<Student | null>
-  deleteStudent: (studentId: string) => void
-  updateAttendance: (studentId: string, date: string, status: string | null, reason?: string) => void
-  updateStudent: (studentId: string, updates: Partial<Omit<Student, "id" | "attendance">> & { courses?: string[] }) => void
+  deleteStudent: (studentId: string) => Promise<boolean>
+  updateAttendance: (studentId: string, date: string, status: AttendanceStatus, reason?: string) => Promise<boolean>
+  updateStudent: (
+    studentId: string,
+    updates: Partial<Omit<Student, "id" | "attendance">> & { courses?: string[] },
+  ) => Promise<boolean>
   courses: Course[]
   addCourse: (course: Course) => Promise<Course | null>
   updateCourse: (courseId: string, updates: Partial<Course>) => Promise<boolean>
   deleteCourse: (courseId: string) => Promise<boolean>
-  refreshData: () => void
+  refreshData: () => Promise<void>
   isLoading: boolean
 }
 
@@ -83,10 +86,12 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     async (studentId: string) => {
       try {
         setIsLoading(true)
-        await deleteStudentFromSupabase(studentId)
+        const ok = await deleteStudentFromSupabase(studentId)
         await refreshData()
+        return ok
       } catch (error) {
         console.error("[v0] Error deleting student:", error)
+        return false
       } finally {
         setIsLoading(false)
       }
@@ -95,14 +100,15 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   )
 
   const updateAttendance = useCallback(
-    async (studentId: string, date: string, status: string | null, reason?: string) => {
+    async (studentId: string, date: string, status: AttendanceStatus, reason?: string) => {
       try {
         setIsLoading(true)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await updateAttendanceInSupabase(studentId, date, status as any, reason)
+        const ok = await updateAttendanceInSupabase(studentId, date, status, reason)
         await refreshData()
+        return ok
       } catch (error) {
         console.error("[v0] Error updating attendance:", error)
+        return false
       } finally {
         setIsLoading(false)
       }
@@ -117,10 +123,12 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     ) => {
       try {
         setIsLoading(true)
-        await updateStudentInSupabase(studentId, updates)
+        const ok = await updateStudentInSupabase(studentId, updates)
         await refreshData()
+        return ok
       } catch (error) {
         console.error("[v0] Error updating student:", error)
+        return false
       } finally {
         setIsLoading(false)
       }

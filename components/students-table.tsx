@@ -36,6 +36,7 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
     return students.filter((student) => student.name.toLowerCase().includes(term))
   }, [students, search])
 
+
   return (
     <div className="space-y-3 rounded-2xl border border-border/60 bg-white/85 p-5 shadow-sm backdrop-blur">
       {showToolbar && (
@@ -63,7 +64,7 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
           <span>اسم الطالب</span>
           <span>الجوال</span>
           <span>عدد الدورات</span>
-          <span>المستحقات</span>
+          <span>الديون</span>
           <span>الإنذارات</span>
           <span className="text-left">إجراءات</span>
         </div>
@@ -79,19 +80,18 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
                 className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[1.8fr,1fr,1fr,1fr,1fr]"
               >
                 <div>
-                  <p className="text-base font-semibold text-foreground">{student.name}</p>
-                  <p className="text-xs text-muted-foreground">المعرف: {student.id}</p>
+                  <p className="text-lg font-bold text-foreground">{student.name}</p>
                 </div>
-                <div className="text-sm font-semibold text-foreground">{student.phone || "—"}</div>
-                <div className="text-sm font-semibold text-foreground">{coursesCount}</div>
-                <div className="text-sm font-semibold text-foreground">{debt}</div>
-                <div className="text-sm font-semibold text-foreground">{warnings}</div>
+                <div className="text-md font-semibold text-foreground">{student.phone || "—"}</div>
+                <div className="text-md font-semibold text-foreground"> <span className=" text-sm text-muted-foreground">عدد الدورات: </span> {coursesCount}</div>
+                <div className="text-md font-semibold text-foreground"><span className=" text-sm text-muted-foreground">الديون:</span> {debt}</div>
+                <div className="text-md font-semibold text-foreground"><span className=" text-sm text-muted-foreground">الإنذارات:</span> {warnings}</div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => onView(student.id)} className="gap-1">
+                  <Button variant="outline" size="sm" onClick={() => onView(student.id)} className="gap-1 hover:bg-accent/50">
                     <Eye size={14} />
                     عرض
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => onEdit(student.id)} className="gap-1">
+                  <Button variant="outline" size="sm" onClick={() => onEdit(student.id)} className="gap-1  text-blue-500 border-blue-500 hover:text-blue-700 hover:bg-accent/30">
                     <Pencil size={14} />
                     تعديل
                   </Button>

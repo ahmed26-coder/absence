@@ -25,7 +25,22 @@ export const CourseForm: React.FC<CourseFormProps> = ({ open, onClose, onSubmit,
   const [location, setLocation] = useState(initialData?.location || "")
   const [description, setDescription] = useState(initialData?.description || "")
   const [notes, setNotes] = useState(initialData?.notes || "")
+  const [schedule, setSchedule] = useState(initialData?.schedule || "")
+  const [level, setLevel] = useState(initialData?.level || "")
+
   const isEdit = Boolean(initialData?.id)
+
+  useEffect(() => {
+  if (open) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "auto";
+  }
+  return () => {
+    document.body.style.overflow = "auto";
+  };
+}, [open]);
+
 
   useEffect(() => {
     if (!open) return
@@ -35,6 +50,8 @@ export const CourseForm: React.FC<CourseFormProps> = ({ open, onClose, onSubmit,
     setLocation(initialData?.location || "")
     setDescription(initialData?.description || "")
     setNotes(initialData?.notes || "")
+    setSchedule(initialData?.schedule || "")
+    setLevel(initialData?.level || "")
   }, [initialData, open])
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -46,10 +63,11 @@ export const CourseForm: React.FC<CourseFormProps> = ({ open, onClose, onSubmit,
       instructor: instructor.trim() || DEFAULT_SHEIKH,
       focus: focus.trim() || "—",
       location: location.trim() || "—",
-      schedule: initialData?.schedule || "—",
       color: initialData?.color || "emerald",
       studentIds: initialData?.studentIds || [],
       averageAttendance: initialData?.averageAttendance || 0,
+      schedule: schedule.trim() || "",
+      level: level.trim() || "",
       description: description.trim(),
       notes: notes.trim(),
       trend: initialData?.trend || [],
@@ -63,50 +81,70 @@ export const CourseForm: React.FC<CourseFormProps> = ({ open, onClose, onSubmit,
       title={isEdit ? "تعديل الدورة" : "إضافة دورة جديدة"}
       description="أدخل بيانات الدورة واحفظ التغييرات."
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <label className="form-label">اسم الدورة *</label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="مثال: التجويد المتقدم" />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="max-w-lg w-full max-h-[60vh] md:max-h-[70vh] overflow-y-auto px-1 py-4 scrollbar-custom">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="form-label">الشيخ المشرف</label>
-            <Input
-              value={instructor}
-              onChange={(e) => setInstructor(e.target.value)}
-              placeholder={DEFAULT_SHEIKH}
+            <label className="form-label">اسم الدورة *</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="مثال: التجويد المتقدم" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="form-label">الشيخ المشرف</label>
+              <Input
+                value={instructor}
+                onChange={(e) => setInstructor(e.target.value)}
+                placeholder={DEFAULT_SHEIKH}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="form-label">الموقع</label>
+              <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="مثال: قاعة الحديث" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="form-label">الجدول</label>
+              <Input
+                value={schedule}
+                onChange={(e) => setSchedule(e.target.value)}
+                placeholder="مثال: يومي / أسبوعي"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="form-label">المستوى</label>
+              <Input
+                value={level}
+                onChange={(e) => setLevel(e.target.value)}
+                placeholder="مثال: مبتدئ / متوسط / متقدم"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="form-label">وصف مختصر / محور الدورة</label>
+            <Input value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="مثال: أحكام التجويد" />
+          </div>
+          <div className="space-y-2">
+            <label className="form-label">الوصف التفصيلي</label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="ملاحظات إضافية عن محتوى الدورة"
             />
           </div>
           <div className="space-y-2">
-            <label className="form-label">الموقع</label>
-            <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="مثال: قاعة الحديث" />
+            <label className="form-label">ملاحظات</label>
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات داخلية" />
           </div>
-        </div>
-        <div className="space-y-2">
-          <label className="form-label">وصف مختصر / محور الدورة</label>
-          <Input value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="مثال: أحكام التجويد" />
-        </div>
-        <div className="space-y-2">
-          <label className="form-label">الوصف التفصيلي</label>
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="ملاحظات إضافية عن محتوى الدورة"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="form-label">ملاحظات</label>
-          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات داخلية" />
-        </div>
-        <div className="flex items-center justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose}>
-            إلغاء
-          </Button>
-          <Button type="submit" disabled={!name.trim()}>
-            {isEdit ? "حفظ التعديلات" : "إضافة الدورة"}
-          </Button>
-        </div>
-      </form>
+          <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              إلغاء
+            </Button>
+            <Button type="submit" disabled={!name.trim()}>
+              {isEdit ? "حفظ التعديلات" : "إضافة الدورة"}
+            </Button>
+          </div>
+        </form>
+      </div>
     </Dialog>
   )
 }

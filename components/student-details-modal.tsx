@@ -57,7 +57,7 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-6 md:p-7 w-full max-w-3xl shadow-lg max-h-[80vh] overflow-y-auto space-y-6">
+        <div className="bg-white rounded-2xl p-6 md:p-7 w-full max-w-3xl shadow-lg max-h-[80vh] scrollbar-custom overflow-y-auto space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold mb-1">سجل الحضور - {student.name}</h2>

@@ -91,7 +91,9 @@ export const StudentListItem: React.FC<StudentListItemProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <AttendanceStatusButton
               status={record?.status || null}
-              onStatusChange={(status, reason) => updateAttendance(student.id, selectedDate, status, reason)}
+              onStatusChange={async (status, reason) => {
+                await updateAttendance(student.id, selectedDate, status, reason)
+              }}
               date={selectedDate}
               currentReason={record?.reason}
             />

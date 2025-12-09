@@ -47,9 +47,9 @@ export const CoursesTable: React.FC<CoursesTableProps> = ({ courses, onView, onE
                 <p className="text-base font-semibold text-foreground">{course.name}</p>
                 <p className="text-xs text-muted-foreground">{course.focus}</p>
               </div>
-              <div className="text-sm font-semibold text-foreground">{course.studentIds.length}</div>
+              <div className="text-sm font-semibold text-foreground">عدد الطلاب: {course.studentIds.length}</div>
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-foreground">{course.averageAttendance}%</p>
+                <p className="text-sm font-semibold text-foreground">نسبة الحضور: {course.averageAttendance}%</p>
                 <Progress value={course.averageAttendance} />
               </div>
               <div className="flex flex-wrap items-center gap-2">

@@ -40,7 +40,7 @@ export const buildCourseData = (
   sessionDates: string[]
   studentCourseSummaries: Record<string, StudentCourseSummary[]>
 } => {
-  const sessionDates = recentDates(6)
+  const sessionDates = recentDates(10)
   const storedCourses: BaseCourse[] = existingCourses && existingCourses.length > 0 ? existingCourses : getStoredCourses()
   const courses: CourseOverview[] = storedCourses.map((course) => {
     const assignedStudents = students.filter((student) => student.courses?.includes(course.id))
@@ -88,11 +88,13 @@ export const buildCourseData = (
         const course = courses.find((c) => c.id === courseId)
         const stats = getStudentStats(student)
         const totalSessions = stats.present + stats.absent + stats.excused
-
+        const attendanceRate =
+          totalSessions > 0 ? Math.round((stats.present / totalSessions) * 100) : 0
+  
         return {
           courseId,
           courseName: course?.name || "دورة",
-          attendanceRate: stats.presentPercentage,
+          attendanceRate,
           totalSessions,
         }
       })
@@ -100,6 +102,7 @@ export const buildCourseData = (
     },
     {},
   )
+  
 
   return { courses, studentsWithCourses, assignments, sessionDates, studentCourseSummaries }
 }
