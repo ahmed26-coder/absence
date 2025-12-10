@@ -1,12 +1,13 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { motion } from "framer-motion"
 import type { AttendanceStatus, Student } from "@/lib/types"
 import type { StudentCourseSummary } from "@/lib/course-data"
 import { useAttendance } from "./attendance-context"
-import { getStudentStats } from "@/lib/storage"
+import { getStudentStats, getAttendanceRecord } from "@/lib/storage"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { AttendanceStatusButton } from "./attendance-status-button"
@@ -23,6 +24,7 @@ interface StudentCardProps {
   courseLabels?: Record<string, string>
   onNavigateToCourse?: (courseId: string) => void
   courseSummaries?: StudentCourseSummary[]
+  currentCourseId?: string | null
 }
 
 export const StudentCard: React.FC<StudentCardProps> = ({
@@ -31,12 +33,18 @@ export const StudentCard: React.FC<StudentCardProps> = ({
   courseLabels,
   onNavigateToCourse,
   courseSummaries,
+  currentCourseId,
 }) => {
   const { updateAttendance, deleteStudent } = useAttendance()
-  const stats = getStudentStats(student, null, null)
-  const record = student.attendance[selectedDate]
+  const stats = getStudentStats(student, null, null, currentCourseId ?? null)
+  const record = getAttendanceRecord(student, selectedDate, currentCourseId ?? null)
   const [reasonInput, setReasonInput] = useState("");
   const [isReasonModalOpen, setIsReasonModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showEditStudent, setShowEditStudent] = useState(false)
@@ -58,12 +66,14 @@ export const StudentCard: React.FC<StudentCardProps> = ({
       return;
     }
     setLoadingStatus(status as AttendanceStatus);
-    updateAttendance(student.id, selectedDate, status, reason);
+    // update local + server via context (include course when available)
+    const courseId = currentCourseId || null
+    updateAttendance(student.id, courseId, selectedDate, status, reason)
 
     try {
-      await updateAttendanceInSupabase(student.id, selectedDate, status, reason);
+      await updateAttendanceInSupabase(student.id, courseId, selectedDate, status, reason)
     } catch (err) {
-      console.error("خطأ في تحديث Supabase", err);
+      console.error("خطأ في تحديث Supabase", err)
     }
     setLoadingStatus(null);
   };
@@ -91,7 +101,17 @@ export const StudentCard: React.FC<StudentCardProps> = ({
   const [loadingStatus, setLoadingStatus] = useState<AttendanceStatus | null>(null);
   const totalDays = stats.present + stats.absent + stats.excused;
   const attendanceRate = totalDays > 0 ? Math.round((stats.present / totalDays) * 100) : 0;
-  const progressColor = getProgressColor(record?.status || null);
+  const progressColor = getProgressColor(record?.status ?? null);
+
+  // lock background scroll while the small reason modal is open
+  useEffect(() => {
+    if (!isReasonModalOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = prev || ""
+    }
+  }, [isReasonModalOpen])
 
 
   return (
@@ -103,17 +123,17 @@ export const StudentCard: React.FC<StudentCardProps> = ({
         className="relative overflow-hidden rounded-2xl border border-border/60 bg-white/85 p-6 shadow-sm backdrop-blur transition-all hover:-translate-y-1 hover:shadow-lg"
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-50/80 via-white to-amber-50/80" />
-        <div className="relative flex items-start justify-between gap-3">
+        <div className="relative flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <h3 className="font-extrabold text-xl text-foreground">{student.name}</h3>
             <div className="flex flex-wrap gap-1">
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${getStatusBgColor(
-                  record?.status,
+                  record?.status ?? null,
                 )}`}
               >
                 <span className="size-2 rounded-full bg-current opacity-80" />
-                {getStatusDisplay(record?.status)}
+                {getStatusDisplay(record?.status ?? null)}
               </span>
               {(student.courses || []).map((courseId) => (
                 <Link
@@ -176,53 +196,57 @@ export const StudentCard: React.FC<StudentCardProps> = ({
 
         <div className="relative mt-5 space-y-3">
           <AttendanceStatusButton
-            status={record?.status || null}
+            status={record?.status ?? null}
             isLoading={loadingStatus !== null}
             date={selectedDate}
             onStatusChange={handleStatusChange}
             currentReason={record?.reason}
           />
 
-          {isReasonModalOpen && (
-            <div className="fixed inset-0 bg-black/20 backdrop-blur flex items-center justify-center">
-              <div className="bg-white rounded-xl p-6 w-80 shadow-xl space-y-4">
-                <h3 className="text-lg font-bold">سبب الغياب</h3>
+          {isReasonModalOpen && mounted && (
+            <>
+              {createPortal(
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setIsReasonModalOpen(false)}>
+                  <div className="bg-white rounded-xl p-6 w-full max-w-xs shadow-xl space-y-4" onClick={(e) => e.stopPropagation()}>
+                    <h3 className="text-lg font-bold">سبب الغياب</h3>
 
-                <input
-                  value={reasonInput}
-                  onChange={(e) => setReasonInput(e.target.value)}
-                  className="w-full border rounded-lg p-2 text-sm"
-                  placeholder="اكتب السبب هنا..."
-                />
+                    <input
+                      value={reasonInput}
+                      onChange={(e) => setReasonInput(e.target.value)}
+                      className="w-full border rounded-lg p-2 text-sm"
+                      placeholder="اكتب السبب هنا..."
+                    />
 
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsReasonModalOpen(false)}>
-                    إلغاء
-                  </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setIsReasonModalOpen(false)}>
+                        إلغاء
+                      </Button>
 
-                  <Button
-                    onClick={() => {
-                      // تحديث فوراً عند الضغط على "تم"
-                      updateAttendance(student.id, selectedDate, "E", reasonInput);
+                      <Button
+                        onClick={() => {
+                          // تحديث فوراً عند الضغط على "تم"
+                          const courseId = currentCourseId || null
+                          updateAttendance(student.id, courseId, selectedDate, "E", reasonInput)
 
-                      // إرسال التحديث للسيرفر
-                      updateAttendanceInSupabase(student.id, selectedDate, "E", reasonInput)
-                        .then((success) => {
-                          if (!success) console.error("فشل تحديث الغياب مع السبب على Supabase");
-                        })
-                        .catch(console.error);
+                          // إرسال التحديث للسيرفر
+                          updateAttendanceInSupabase(student.id, courseId, selectedDate, "E", reasonInput)
+                            .then((success) => {
+                              if (!success) console.error("فشل تحديث الغياب مع السبب على Supabase");
+                            })
+                            .catch(console.error);
 
-                      setIsReasonModalOpen(false);
-                      setReasonInput("");
-                    }}
-                  >
-                    تم
-                  </Button>
-
-
-                </div>
-              </div>
-            </div>
+                          setIsReasonModalOpen(false);
+                          setReasonInput("");
+                        }}
+                      >
+                        تم
+                      </Button>
+                    </div>
+                  </div>
+                </div>,
+                document.body
+              )}
+            </>
           )}
 
 

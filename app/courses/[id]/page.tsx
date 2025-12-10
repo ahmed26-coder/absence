@@ -2,14 +2,18 @@
 
 import { use, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, CheckCircle2, Clock, List, Grid3x3, Users, XCircle } from "lucide-react"
+import { ArrowRight, CheckCircle2, Clock, List, Grid3x3, Users, XCircle, Plus, Trash2 } from "lucide-react"
 
 import { AttendanceProvider, useAttendance } from "@/components/attendance-context"
 import { StudentCard } from "@/components/student-card"
 import { StudentsTable } from "@/components/students-table"
+import { AddStudentsToCourseModal } from "@/components/add-students-to-course-modal"
+import { RemoveStudentsFromCourseModal } from "@/components/remove-students-from-course-modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { buildCourseData, type StudentWithCourses } from "@/lib/course-data"
+import { getAttendanceRecord } from "@/lib/storage"
+import { useToast } from "@/components/ui/toast-provider"
 
 interface CourseDetailsPageProps {
   params: { id: string }
@@ -53,7 +57,8 @@ const StatsCard = ({
 }
 
 const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
-  const { data } = useAttendance()
+  const { data, updateStudent } = useAttendance()
+  const { pushToast } = useToast()
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "present" | "absent" | "excused">("all")
@@ -64,6 +69,8 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
     return "card"
   })
   const [currentPage, setCurrentPage] = useState(0)
+  const [isAddStudentsOpen, setIsAddStudentsOpen] = useState(false)
+  const [isRemoveStudentsOpen, setIsRemoveStudentsOpen] = useState(false)
   const itemsPerPage = 9
 
   useEffect(() => {
@@ -92,7 +99,7 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
   const filteredStudents = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
     return courseStudents.filter((student: StudentWithCourses) => {
-      const record = student.attendance?.[selectedDate]
+      const record = getAttendanceRecord(student, selectedDate, courseId)
       const matchesSearch =
         !term ||
         student.name.toLowerCase().includes(term) ||
@@ -119,7 +126,7 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
   const stats = useMemo(() => {
     const base = { total: courseStudents.length, present: 0, absent: 0, excused: 0 }
     return courseStudents.reduce((acc, student) => {
-      const record = student.attendance?.[selectedDate]
+      const record = getAttendanceRecord(student, selectedDate, courseId)
       if (record?.status === "H") acc.present += 1
       else if (record?.status === "G") acc.absent += 1
       else if (record?.status === "E") acc.excused += 1
@@ -144,6 +151,44 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
   }
 
   const handleViewStudent = () => {}
+
+  const handleAddStudents = async (studentIds: string[]): Promise<boolean> => {
+    try {
+      for (const studentId of studentIds) {
+        const student = data.students.find((s) => s.id === studentId)
+        if (student) {
+          const currentCourses = student.courses || []
+          if (!currentCourses.includes(courseId)) {
+            await updateStudent(studentId, {
+              courses: [...currentCourses, courseId],
+            })
+          }
+        }
+      }
+      return true
+    } catch (error) {
+      console.error("Error adding students to course:", error)
+      return false
+    }
+  }
+
+  const handleRemoveStudents = async (studentIds: string[]): Promise<boolean> => {
+    try {
+      for (const studentId of studentIds) {
+        const student = data.students.find((s) => s.id === studentId)
+        if (student) {
+          const currentCourses = student.courses || []
+          await updateStudent(studentId, {
+            courses: currentCourses.filter((c) => c !== courseId),
+          })
+        }
+      }
+      return true
+    } catch (error) {
+      console.error("Error removing students from course:", error)
+      return false
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-amber-50 p-6 md:p-10">
@@ -207,6 +252,26 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
             <StatsCard label="غياب" value={stats.absent} icon={XCircle} tone="danger" />
             <StatsCard label="عذر" value={stats.excused} icon={Clock} tone="muted" />
           </div>
+
+          <div className="mt-4 flex gap-2">
+            <Button
+              onClick={() => setIsAddStudentsOpen(true)}
+              size="sm"
+              className="gap-2"
+            >
+              <Plus size={16} />
+              إضافة طالب
+            </Button>
+            <Button
+              onClick={() => setIsRemoveStudentsOpen(true)}
+              size="sm"
+              variant="outline"
+              className="gap-2"
+            >
+              <Trash2 size={16} />
+              حذف طالب
+            </Button>
+          </div>
         </div>
 
         <section id="students" className="space-y-4 rounded-2xl border border-border/60 bg-white/90 p-6 shadow-sm backdrop-blur">
@@ -268,6 +333,7 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
                   courseLabels={courseLabels}
                   onNavigateToCourse={() => {}}
                   courseSummaries={studentCourseSummaries[student.id]}
+                  currentCourseId={courseId}
                 />
               ))}
             </div>
@@ -306,6 +372,26 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
             </div>
           )}
         </section>
+
+        <AddStudentsToCourseModal
+          isOpen={isAddStudentsOpen}
+          onClose={() => setIsAddStudentsOpen(false)}
+          courseId={courseId}
+          courseName={course.name}
+          allStudents={data.students}
+          enrolledStudentIds={courseStudents.map((s) => s.id)}
+          onAddStudents={handleAddStudents}
+        />
+
+        <RemoveStudentsFromCourseModal
+          isOpen={isRemoveStudentsOpen}
+          onClose={() => setIsRemoveStudentsOpen(false)}
+          courseId={courseId}
+          courseName={course.name}
+          allStudents={data.students}
+          enrolledStudentIds={courseStudents.map((s) => s.id)}
+          onRemoveStudents={handleRemoveStudents}
+        />
       </div>
     </div>
   )

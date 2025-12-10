@@ -45,6 +45,7 @@ export const deleteStudent = (studentId: string): void => {
 
 export const updateAttendance = (
   studentId: string,
+  courseId: string | null,
   date: string,
   status: AttendanceStatus | null | undefined,
   reason?: string
@@ -52,24 +53,51 @@ export const updateAttendance = (
   const data = getStorageData();
   const student = data.students.find((s) => s.id === studentId);
 
+  // normalize course key (use 'global' for null/undefined)
+  const courseKey = courseId || "_global"
+
   if (student) {
+    student.attendance = student.attendance || {};
+    student.attendance[courseKey] = student.attendance[courseKey] || {};
+
     if (status === null || typeof status === "undefined") {
-      if (student.attendance && student.attendance[date]) {
-        delete student.attendance[date];
+      if (student.attendance[courseKey] && student.attendance[courseKey][date]) {
+        delete student.attendance[courseKey][date];
       }
     } else {
-      student.attendance = student.attendance || {};
-      student.attendance[date] = { date, status, reason };
+      student.attendance[courseKey][date] = { date, status, reason };
     }
+
     data.lastUpdated = new Date().toISOString();
     saveStorageData(data);
   }
 };
 
+export const getAttendanceRecord = (
+  student: Student,
+  date: string,
+  courseId?: string | null
+) => {
+  if (!student || !student.attendance) return null
+
+  if (courseId) {
+    const key = courseId
+    return student.attendance[key]?.[date] ?? null
+  }
+
+  // no course specified: try to find any course record for that date
+  for (const key of Object.keys(student.attendance || {})) {
+    const rec = student.attendance[key]?.[date]
+    if (rec) return rec
+  }
+  return null
+}
+
 export const getStudentStats = (
   student: Student,
   startDate?: string | null,
-  endDate?: string | null
+  endDate?: string | null,
+  courseId?: string | null
 ) => {
   let present = 0;
   let absent = 0;
@@ -86,21 +114,35 @@ export const getStudentStats = (
     };
   }
 
-  Object.entries(student.attendance).forEach(([date, record]) => {
-    const inRange =
-      (!startDate && !endDate) ||
-      (!startDate && endDate ? date <= endDate : true) ||
-      (startDate && !endDate ? date >= startDate : true) ||
-      (startDate && endDate ? date >= startDate && date <= endDate : true);
+  const inRange = (date: string) =>
+    (!startDate && !endDate) ||
+    (!startDate && endDate ? date <= endDate! : true) ||
+    (startDate && !endDate ? date >= startDate! : true) ||
+    (startDate && endDate ? date >= startDate! && date <= endDate! : true)
 
-    if (!inRange) return;
+  // If courseId specified, only iterate that course's records
+  if (courseId) {
+    const key = courseId
+    const records = student.attendance[key] || {}
+    Object.entries(records).forEach(([date, record]) => {
+      if (!inRange(date)) return
+      if (record.status === "H") present++
+      else if (record.status === "G") absent++
+      else if (record.status === "E") excused++
+    })
+  } else {
+    // iterate across all courses
+    Object.values(student.attendance).forEach((courseRecords) => {
+      Object.entries(courseRecords || {}).forEach(([date, record]) => {
+        if (!inRange(date)) return
+        if (record.status === "H") present++
+        else if (record.status === "G") absent++
+        else if (record.status === "E") excused++
+      })
+    })
+  }
 
-    if (record.status === "H") present++;
-    else if (record.status === "G") absent++;
-    else if (record.status === "E") excused++;
-  });
-
-  const total = present + absent + excused;
+  const total = present + absent + excused
   return {
     present,
     absent,
@@ -108,5 +150,5 @@ export const getStudentStats = (
     presentPercentage: total > 0 ? Math.round((present / total) * 100) : 0,
     absentPercentage: total > 0 ? Math.round((absent / total) * 100) : 0,
     excusedPercentage: total > 0 ? Math.round((excused / total) * 100) : 0,
-  };
-};
+  }
+}

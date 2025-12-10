@@ -18,7 +18,7 @@ interface AttendanceContextType {
   data: AttendanceData
   addStudent: (payload: Pick<Student, "name"> & Partial<Student> & { courses: string[] }) => Promise<Student | null>
   deleteStudent: (studentId: string) => Promise<boolean>
-  updateAttendance: (studentId: string, date: string, status: AttendanceStatus, reason?: string) => Promise<boolean>
+  updateAttendance: (studentId: string, courseId: string | null, date: string, status: AttendanceStatus, reason?: string) => Promise<boolean>
   updateStudent: (
     studentId: string,
     updates: Partial<Omit<Student, "id" | "attendance">> & { courses?: string[] },
@@ -100,10 +100,10 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   )
 
   const updateAttendance = useCallback(
-    async (studentId: string, date: string, status: AttendanceStatus, reason?: string) => {
+    async (studentId: string, courseId: string | null, date: string, status: AttendanceStatus, reason?: string) => {
       try {
         setIsLoading(true)
-        const ok = await updateAttendanceInSupabase(studentId, date, status, reason)
+        const ok = await updateAttendanceInSupabase(studentId, courseId, date, status, reason)
         await refreshData()
         return ok
       } catch (error) {

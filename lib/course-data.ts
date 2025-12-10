@@ -51,7 +51,7 @@ export const buildCourseData = (
       let excused = 0
 
       assignedStudents.forEach((student) => {
-        const record = student.attendance?.[date]
+        const record = student.attendance?.[course.id]?.[date]
         if (record?.status === "H") present += 1
         else if (record?.status === "G") absent += 1
         else if (record?.status === "E") excused += 1
@@ -86,7 +86,7 @@ export const buildCourseData = (
     (acc, student) => {
       acc[student.id] = (assignments[student.id] || []).map((courseId) => {
         const course = courses.find((c) => c.id === courseId)
-        const stats = getStudentStats(student)
+        const stats = getStudentStats(student, undefined, undefined, courseId)
         const totalSessions = stats.present + stats.absent + stats.excused
         const attendanceRate =
           totalSessions > 0 ? Math.round((stats.present / totalSessions) * 100) : 0

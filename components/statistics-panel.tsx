@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Activity, BarChart3, CalendarClock, Users } from "lucide-react"
 
 import type { Student } from "@/lib/types"
-import { getStudentStats } from "@/lib/storage"
+import { getStudentStats, getAttendanceRecord } from "@/lib/storage"
 import { Progress } from "./ui/progress"
 
 interface StatisticsPanelProps {
@@ -28,7 +28,7 @@ const buildTrend = (students: Student[], endDate: string) => {
     let excused = 0
 
     students.forEach((student) => {
-      const record = student.attendance?.[date]
+      const record = getAttendanceRecord(student, date)
       if (record?.status === "H") present += 1
       else if (record?.status === "G") absent += 1
       else if (record?.status === "E") excused += 1

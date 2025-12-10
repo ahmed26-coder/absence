@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AttendanceStatusButton } from "@/components/attendance-status-button"
 import { buildCourseData, type CourseOverview, type StudentWithCourses } from "@/lib/course-data"
+import { getAttendanceRecord } from "@/lib/storage"
 import { CoursesTable } from "@/components/courses-table"
 import { CourseForm } from "@/components/course-form"
 import { StudentsTable } from "@/components/students-table"
@@ -200,14 +201,14 @@ const CoursesContent = ({ initialActiveCourseId }: { initialActiveCourseId?: str
         (student.courses || []).some((courseId) => (courseLabels[courseId] || "").toLowerCase().includes(term))
 
       const matchesCourse = courseFilter === "all" || student.courses?.includes(courseFilter)
-      const record = student.attendance?.[selectedDate]
+      const record = getAttendanceRecord(student, selectedDate)
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "present" && record?.status === "H") ||
         (statusFilter === "absent" && record?.status === "G") ||
         (statusFilter === "excused" && record?.status === "E")
 
-      const matchesFilterDate = !filterDate || Boolean(student.attendance?.[filterDate])
+      const matchesFilterDate = !filterDate || Boolean(getAttendanceRecord(student, filterDate))
       return matchesSearch && matchesCourse && matchesStatus && matchesFilterDate
     })
   }, [studentsWithCourses, searchTerm, courseFilter, statusFilter, selectedDate, filterDate, courseLabels])
@@ -233,7 +234,7 @@ const CoursesContent = ({ initialActiveCourseId }: { initialActiveCourseId?: str
     const term = courseStudentSearch.trim().toLowerCase()
     return courseStudents.filter((student) => {
       const matchesSearch = !term || student.name.toLowerCase().includes(term)
-      const record = student.attendance?.[courseDate]
+      const record = getAttendanceRecord(student, courseDate, activeCourseId)
       const matchesStatus =
         courseStatusFilter === "all" ||
         (courseStatusFilter === "present" && record?.status === "H") ||
@@ -248,7 +249,7 @@ const CoursesContent = ({ initialActiveCourseId }: { initialActiveCourseId?: str
     if (!activeCourse) return { total: 0, present: 0, absent: 0, excused: 0 }
     const stats = courseStudents.reduce(
       (acc, student) => {
-        const record = student.attendance?.[courseDate]
+        const record = getAttendanceRecord(student, courseDate, activeCourseId)
         if (record?.status === "H") acc.present += 1
         else if (record?.status === "G") acc.absent += 1
         else if (record?.status === "E") acc.excused += 1

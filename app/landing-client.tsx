@@ -17,7 +17,7 @@ const features = [
 export function LandingContent() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-amber-50">
-      <main className="mx-auto flex max-w-6xl flex-col gap-16 px-4 pb-16 pt-28 md:px-8 md:pt-32">
+      <main className="mx-auto flex max-w-6xl flex-col gap-16 px-4 pb-16 pt-12 md:px-8 md:pt-20">
         <motion.section
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}

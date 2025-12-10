@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from "react"
 import type { Student, AttendanceStatus } from "@/lib/types"
 import { useAttendance } from "./attendance-context"
+import { LoadingButton } from "@/components/ui/loading-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { getStudentStats } from "@/lib/storage"
+import { getStudentStats, getAttendanceRecord } from "@/lib/storage"
 import { Dialog } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/toast-provider"
@@ -19,7 +20,7 @@ interface EditStudentModalProps {
 
 export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, student, onClose }) => {
   const today = useMemo(() => new Date().toISOString().split("T")[0], [])
-  const currentAttendance = student.attendance?.[today] || { status: "", reason: "" }
+  const currentAttendance = getAttendanceRecord(student, today) || { status: "", reason: "" }
 
   const [name, setName] = useState(student.name)
   const [age, setAge] = useState<string>(student.age ? String(student.age) : "")
@@ -30,8 +31,9 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, stud
   const [notes, setNotes] = useState(student.notes || "")
   const [status, setStatus] = useState<AttendanceStatus | "">(currentAttendance.status as AttendanceStatus | "")
   const [reason, setReason] = useState(currentAttendance.reason || "")
+  const [courses, setCourses] = useState<string[]>(student.courses || [])
   const [submitting, setSubmitting] = useState(false)
-  const { updateStudent, updateAttendance } = useAttendance()
+  const { updateStudent, updateAttendance, data } = useAttendance()
   const { pushToast } = useToast()
 
   const stats = getStudentStats(student)
@@ -45,7 +47,8 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, stud
     setDebt(student.debt !== undefined ? String(student.debt) : "")
     setWarnings(student.warnings !== undefined ? String(student.warnings) : "0")
     setNotes(student.notes || "")
-    const attendance = student.attendance?.[today] || { status: "", reason: "" }
+    setCourses(student.courses || [])
+    const attendance = getAttendanceRecord(student, today) || { status: "", reason: "" }
     setStatus(attendance.status as AttendanceStatus | "")
     setReason(attendance.reason || "")
   }, [isOpen, student, today])
@@ -54,6 +57,11 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, stud
     e.preventDefault()
     if (!name.trim()) {
       pushToast("يرجى إدخال اسم الطالب", "error")
+      return
+    }
+
+    if (!courses.length) {
+      pushToast("يجب تسجيل الطالب في دورة واحدة على الأقل", "error")
       return
     }
 
@@ -71,10 +79,12 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, stud
         debt: Number.isNaN(debtValue) ? undefined : debtValue,
         warnings: Number.isNaN(warningsValue) ? undefined : warningsValue,
         notes: notes.trim() || undefined,
+        courses,
       })
 
       if (status) {
-        await updateAttendance(student.id, today, status as AttendanceStatus, reason || undefined)
+        // no course specified in student dialog: update global/null course
+        await updateAttendance(student.id, null, today, status as AttendanceStatus, reason || undefined)
       }
 
       pushToast("تم حفظ بيانات الطالب", "success")
@@ -184,13 +194,40 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, stud
             <p>الأعذار: {stats.excused}</p>
           </div>
 
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">الدورات المشتركة</Label>
+            <div className="flex flex-wrap gap-2 rounded-xl border border-border/60 bg-muted/40 p-3">
+              {data.courses.map((course) => {
+                const selected = courses.includes(course.id)
+                return (
+                  <button
+                    key={course.id}
+                    type="button"
+                    onClick={() => {
+                      setCourses((prev) =>
+                        prev.includes(course.id) ? prev.filter((c) => c !== course.id) : [...prev, course.id]
+                      )
+                    }}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                      selected
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-white text-muted-foreground hover:border-primary/50"
+                    }`}
+                  >
+                    {course.name}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           <div className="flex gap-2 justify-end">
             <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
               إلغاء
             </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "جاري الحفظ..." : "حفظ التعديلات"}
-            </Button>
+            <LoadingButton type="submit" isLoading={submitting} loadingText="جاري الحفظ...">
+              حفظ التعديلات
+            </LoadingButton>
           </div>
         </form>
       </div>

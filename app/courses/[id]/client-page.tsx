@@ -10,6 +10,7 @@ import { StudentsTable } from "@/components/students-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { buildCourseData, type StudentWithCourses } from "@/lib/course-data"
+import { getAttendanceRecord } from "@/lib/storage"
 
 interface CourseDetailsPageClientProps {
   courseId: string
@@ -88,7 +89,7 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
   const filteredStudents = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
     return courseStudents.filter((student: StudentWithCourses) => {
-      const record = student.attendance?.[selectedDate]
+      const record = getAttendanceRecord(student, selectedDate, courseId)
       const matchesSearch =
         !term ||
         student.name.toLowerCase().includes(term) ||
@@ -115,7 +116,7 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
   const stats = useMemo(() => {
     const base = { total: courseStudents.length, present: 0, absent: 0, excused: 0 }
     return courseStudents.reduce((acc, student) => {
-      const record = student.attendance?.[selectedDate]
+      const record = getAttendanceRecord(student, selectedDate, courseId)
       if (record?.status === "H") acc.present += 1
       else if (record?.status === "G") acc.absent += 1
       else if (record?.status === "E") acc.excused += 1

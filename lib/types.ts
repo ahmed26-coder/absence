@@ -9,7 +9,9 @@ export interface AttendanceRecord {
 export interface Student {
   id: string
   name: string
-  attendance: Record<string, AttendanceRecord>
+  // attendance is now scoped by course: { [courseId]: { [date]: AttendanceRecord } }
+  // we keep string keys so a 'global' or null-course entries can be represented if needed
+  attendance: Record<string, Record<string, AttendanceRecord>>
   courses?: string[]
   phone?: string
   email?: string

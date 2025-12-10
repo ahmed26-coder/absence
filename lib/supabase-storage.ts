@@ -32,10 +32,13 @@ export const getStudentsFromSupabase = async (): Promise<Student[]> => {
           console.error("[v0] Error fetching student_courses:", courseError)
         }
 
-        const attendance: Record<string, AttendanceRecord> = {}
+        // attendance is now grouped by course
+        const attendance: Record<string, Record<string, AttendanceRecord>> = {}
         ;(attendanceData || []).forEach((record) => {
           const status = record.status === "present" ? "H" : record.status === "absent" ? "G" : "E"
-          attendance[record.date] = {
+          const courseKey = record.course_id ? String(record.course_id) : "_global"
+          attendance[courseKey] = attendance[courseKey] || {}
+          attendance[courseKey][record.date] = {
             status: status as AttendanceStatus,
             reason: record.reason || undefined,
             date: record.date,
@@ -168,6 +171,7 @@ export const updateStudentInSupabase = async (
 
 export const updateAttendanceInSupabase = async (
   studentId: string,
+  courseId: string | null,
   date: string,
   status: AttendanceStatus,
   reason?: string,
@@ -175,34 +179,53 @@ export const updateAttendanceInSupabase = async (
   try {
     const supabase = getSupabaseClient()
     if (!supabase) return false
-
     if (status === null) {
-      // Delete attendance record
-      const { error } = await supabase.from("attendance").delete().eq("student_id", studentId ).eq("date", date)
+      // Delete attendance record (match course_id as well if provided)
+      let query = supabase.from("attendance").delete().eq("student_id", studentId).eq("date", date)
+      if (courseId) query = query.eq("course_id", courseId)
+
+      const { error } = await query
 
       if (error) {
-        console.error("[v0] Error deleting attendance:", error)
+        console.error("[v0] Error deleting attendance:", { error, studentId, courseId, date })
         return false
       }
     } else {
       // Convert status format
       const dbStatus = status === "H" ? "present" : status === "G" ? "absent" : "excused"
 
-      // Upsert attendance record
-      const { error } = await supabase.from("attendance").upsert(
-        [
-          {
-            student_id: studentId,
-            date,
-            status: dbStatus,
-            reason: reason || null,
-          },
-        ],
-        { onConflict: "student_id,date" },
-      )
+      // Prepare upsert payload
+      const payload: any = {
+        student_id: studentId,
+        date,
+        status: dbStatus,
+        reason: reason || null,
+      }
+      if (courseId) payload.course_id = courseId
 
-      if (error) {
-        console.error("[v0] Error updating attendance:", error)
+      // Try upsert with course_id constraint first (new schema)
+      // If it fails, fall back to old constraint
+      let result = await supabase.from("attendance").upsert([payload], { onConflict: "student_id,course_id,date" })
+
+      if (result.error) {
+        const errorMsg = result.error.message || JSON.stringify(result.error)
+        // If the constraint doesn't exist (old schema), try without course_id in conflict
+        if (errorMsg.includes("course_id") || errorMsg.includes("constraint") || errorMsg.includes("23505")) {
+          console.warn("[v0] New constraint not found, trying legacy upsert. Please apply migration from MIGRATION_GUIDE.md", errorMsg)
+          result = await supabase.from("attendance").upsert([payload], { onConflict: "student_id,date" })
+        }
+      }
+
+      if (result.error) {
+        const errorDetails = {
+          error: result.error,
+          payload,
+          studentId,
+          courseId,
+          date,
+          hint: "If this error persists, apply the database migration: migrations/001_add_course_id_to_attendance.sql"
+        }
+        console.error("[v0] Error updating attendance:", errorDetails)
         return false
       }
     }
@@ -217,16 +240,17 @@ export const updateAttendanceInSupabase = async (
 // 🔹 الإضافة: دالة client-side لتحديث الحضور محلياً بعد Supabase
 export const updateAttendance = async (
   studentId: string,
+  courseId: string | null,
   date: string,
   status: AttendanceStatus,
   reason?: string
 ) => {
-  const success = await updateAttendanceInSupabase(studentId, date, status, reason);
-  if (!success) return;
+  const success = await updateAttendanceInSupabase(studentId, courseId, date, status, reason)
+  if (!success) return
 
   // تحديث الحالة محليًا في حالة استخدام state خارجي (مثلاً context)
   // هذه مجرد وظيفة مساعدة، لا تغيّر أي بيانات أخرى هنا
-};
+}
 
 export const getCoursesFromSupabase = async (): Promise<Course[]> => {
   try {
@@ -314,12 +338,24 @@ export const deleteCourseFromSupabase = async (courseId: string): Promise<boolea
     const supabase = getSupabaseClient()
     if (!supabase) return false
 
-    const { error } = await supabase.from("courses").delete().eq("id", courseId)
-    if (error) {
-      console.error("[v0] Error deleting course:", error)
+    // 1. Delete course-student relations
+    const { error: scError } = await supabase
+      .from("student_courses")
+      .delete()
+      .eq("course_id", courseId)
+
+    if (scError) {
+      console.error("[v0] Error deleting student_courses:", scError)
       return false
     }
-    // TODO: ensure cascading delete on student_courses/attendance or handle here.
+
+    // 2. Delete the course itself
+    const { error: courseError } = await supabase.from("courses").delete().eq("id", courseId)
+    if (courseError) {
+      console.error("[v0] Error deleting course:", courseError)
+      return false
+    }
+
     return true
   } catch (error) {
     console.error("[v0] Unexpected error deleting course:", error)

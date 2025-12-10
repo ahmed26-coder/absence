@@ -4,6 +4,7 @@ import { useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Download } from "lucide-react"
 import type { AttendanceStatus, Student } from "@/lib/types"
+import { getAttendanceRecord } from "@/lib/storage"
 
 type PdfFonts = Record<
   string,
@@ -107,7 +108,7 @@ export const ExportButton: React.FC<{ students: Student[]; startDate: string; en
         const row = [{ text: student.name, style: "cellText", margin: [2, 4], alignment: "right" }]
         daysOfWeek.forEach((_, idx) => {
           const dateForThisDay = weekDates[idx] || null
-          const record = dateForThisDay ? student.attendance?.[dateForThisDay] : null
+          const record = dateForThisDay ? getAttendanceRecord(student, dateForThisDay) : null
           row.push({ text: statusLabel(record?.status), style: "cellText", margin: [2, 4], alignment: "right" })
         })
         return row

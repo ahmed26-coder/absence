@@ -3,7 +3,7 @@
 import { useState } from "react"
 import type { Student } from "@/lib/types"
 import { useAttendance } from "./attendance-context"
-import { getStudentStats } from "@/lib/storage"
+import { getStudentStats, getAttendanceRecord } from "@/lib/storage"
 import { Button } from "@/components/ui/button"
 import { AttendanceStatusButton } from "./attendance-status-button"
 import { Trash2, Edit2, Info } from "lucide-react"
@@ -29,7 +29,7 @@ export const StudentListItem: React.FC<StudentListItemProps> = ({
 }) => {
   const { updateAttendance, deleteStudent } = useAttendance()
   const stats = getStudentStats(student, selectedDate, selectedDate)
-  const record = student.attendance[selectedDate]
+  const record = getAttendanceRecord(student, selectedDate)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showEditStudent, setShowEditStudent] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -62,10 +62,10 @@ export const StudentListItem: React.FC<StudentListItemProps> = ({
               <p className="font-semibold text-lg sm:text-xl text-foreground">{student.name}</p>
               <span
                 className={`inline-block w-fit px-3 py-1 rounded text-md font-medium mt-1 sm:mt-0 ${getStatusBgColor(
-                  record?.status,
+                  record?.status ?? null,
                 )}`}
               >
-                {getStatusDisplay(record?.status)}
+                {getStatusDisplay(record?.status ?? null)}
               </span>
             </div>
 
@@ -90,10 +90,11 @@ export const StudentListItem: React.FC<StudentListItemProps> = ({
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <AttendanceStatusButton
-              status={record?.status || null}
+              status={record?.status ?? null}
               onStatusChange={async (status, reason) => {
-                await updateAttendance(student.id, selectedDate, status, reason)
-              }}
+                  // no course specified from list view: let context decide (null)
+                  await updateAttendance(student.id, null, selectedDate, status, reason)
+                }}
               date={selectedDate}
               currentReason={record?.reason}
             />

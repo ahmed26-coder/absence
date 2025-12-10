@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react"
 import type { Student } from "@/lib/types"
 import type { CourseOverview } from "@/lib/course-data"
 import { Button } from "@/components/ui/button"
+import { LoadingButton } from "@/components/ui/loading-button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog } from "@/components/ui/dialog"
@@ -23,7 +24,7 @@ interface StudentFormProps {
     debt?: number
     warnings?: number
     courseIds: string[]
-  }) => void
+  }) => void | Promise<void>
   initialData?: Student
   initialMeta?: {
     phone?: string
@@ -54,6 +55,7 @@ export const StudentForm: React.FC<StudentFormProps> = ({
   const [warnings, setWarnings] = useState<number | undefined>(initialMeta?.warnings ?? initialData?.warnings)
   const [courseIds, setCourseIds] = useState<string[]>(initialMeta?.courseIds || initialData?.courses || [])
   const [courseError, setCourseError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   const isEdit = Boolean(initialData?.id)
 
@@ -76,24 +78,29 @@ export const StudentForm: React.FC<StudentFormProps> = ({
   }, [initialData, initialMeta, open]);
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
     if (!courseIds.length) {
       setCourseError("يجب تسجيل الطالب في دورة واحدة على الأقل")
       return
     }
-    onSubmit({
-      id: initialData?.id,
-      name: name.trim(),
-      phone: phone.trim(),
-      email: email.trim(),
-      notes: notes.trim(),
-      age,
-      debt,
-      warnings,
-      courseIds,
-    })
+    setIsLoading(true)
+    try {
+      await onSubmit({
+        id: initialData?.id,
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        notes: notes.trim(),
+        age,
+        debt,
+        warnings,
+        courseIds,
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const courseOptions = useMemo(() => courses, [courses])
@@ -128,7 +135,7 @@ export const StudentForm: React.FC<StudentFormProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label className="form-label">اسم الطالب *</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="اسم الطالب" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="اسم الطالب" disabled={isLoading} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -139,6 +146,7 @@ export const StudentForm: React.FC<StudentFormProps> = ({
                 onChange={(e) => setAge(e.target.value ? Number(e.target.value) : undefined)}
                 placeholder="مثال: 20"
                 min={0}
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -149,13 +157,14 @@ export const StudentForm: React.FC<StudentFormProps> = ({
                 onChange={(e) => setWarnings(e.target.value ? Number(e.target.value) : undefined)}
                 placeholder="0"
                 min={0}
+                disabled={isLoading}
               />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <label className="form-label">رقم الجوال</label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" />
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" disabled={isLoading} />
             </div>
             <div className="space-y-2">
               <label className="form-label">المستحقات المالية</label>
@@ -166,17 +175,18 @@ export const StudentForm: React.FC<StudentFormProps> = ({
                 placeholder="0"
                 min={0}
                 step="0.1"
+                disabled={isLoading}
               />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <label className="form-label">البريد الإلكتروني</label>
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" />
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" disabled={isLoading} />
             </div>
             <div className="space-y-2">
               <label className="form-label">ملاحظات</label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات داخلية" />
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات داخلية" disabled={isLoading} />
             </div>
           </div>
           <div className="space-y-2">
@@ -189,7 +199,8 @@ export const StudentForm: React.FC<StudentFormProps> = ({
                     key={course.id}
                     type="button"
                     onClick={() => toggleCourse(course.id)}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${selected
+                    disabled={isLoading}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${selected
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-white text-muted-foreground hover:border-primary/50"
                       }`}
@@ -202,12 +213,12 @@ export const StudentForm: React.FC<StudentFormProps> = ({
             {courseError && <p className="text-xs font-semibold text-red-600">{courseError}</p>}
           </div>
           <div className="flex items-center justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               إلغاء
             </Button>
-            <Button type="submit" disabled={!name.trim()}>
+            <LoadingButton type="submit" isLoading={isLoading} loadingText={isEdit ? "جاري الحفظ..." : "جاري الإضافة..."} disabled={!name.trim()}>
               {isEdit ? "حفظ التعديلات" : "إضافة الطالب"}
-            </Button>
+            </LoadingButton>
           </div>
         </form>
       </div>

@@ -17,6 +17,7 @@ import { StudentForm } from "@/components/student-form"
 import { DeleteConfirmModal } from "@/components/delete-confirm-modal"
 import { StudentDetailsModal } from "@/components/student-details-modal"
 import { buildCourseData, type StudentWithCourses } from "@/lib/course-data"
+import { getAttendanceRecord } from "@/lib/storage"
 import type { Student } from "@/lib/types"
 import { useToast } from "@/components/ui/toast-provider"
 
@@ -90,14 +91,13 @@ const StudentsContent = () => {
         (student.courses || []).some((courseId) => (courseLabels[courseId] || "").toLowerCase().includes(term))
 
       const matchesCourse = courseFilter === "all" || student.courses?.includes(courseFilter)
-      const record = student.attendance?.[selectedDate]
+      const record = getAttendanceRecord(student, selectedDate)
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "present" && record?.status === "H") ||
         (statusFilter === "absent" && record?.status === "G") ||
         (statusFilter === "excused" && record?.status === "E")
-
-      const matchesFilterDate = !filterDate || Boolean(student.attendance?.[filterDate])
+      const matchesFilterDate = !filterDate || Boolean(getAttendanceRecord(student, filterDate))
       return matchesSearch && matchesCourse && matchesStatus && matchesFilterDate
     })
   }, [studentsWithCourses, searchTerm, courseFilter, statusFilter, selectedDate, filterDate, courseLabels])
@@ -375,7 +375,7 @@ const StudentsContent = () => {
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full bg-muted px-4 py-2 text-xs font-semibold text-muted-foreground">
                 <Filter size={14} />
-                {filteredStudents.length} نتائج
+                {filteredStudents.length}<span className=" hidden md:block">نتائج</span>
               </span>
               <Button
                 onClick={() => setViewMode("card")}

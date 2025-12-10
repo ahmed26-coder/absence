@@ -1,6 +1,8 @@
 "use client"
 
 import type React from "react"
+import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 
 interface DeleteConfirmModalProps {
@@ -11,11 +13,27 @@ interface DeleteConfirmModalProps {
 }
 
 export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, studentName, onConfirm, onCancel }) => {
-  if (!isOpen) return null
+  const [mounted, setMounted] = useState(false)
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // lock background scroll while modal is open
+  useEffect(() => {
+    if (!isOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = prev || ""
+    }
+  }, [isOpen])
+
+  if (!isOpen || !mounted) return null
+
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={onCancel}>
+      <div className="bg-white rounded-lg p-6 w-full max-w-xs shadow-lg" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-xl font-bold mb-4 text-red-600">تأكيد الحذف</h2>
         <p className="text-gray-700 mb-6">
           هل أنت متأكد من حذف الطالب <span className="font-bold">{studentName}</span>؟
@@ -30,6 +48,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, 
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
