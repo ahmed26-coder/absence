@@ -79,7 +79,7 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
     <>
       {createPortal(
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-          <div className="bg-white rounded-2xl p-6 md:p-7 w-[90vh] max-w-3xl shadow-lg max-h-[80vh] scrollbar-custom overflow-y-auto space-y-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-6 md:p-7 mx-auto w-[90vh] max-w-3xl shadow-lg max-h-[80vh] scrollbar-custom overflow-y-auto space-y-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold mb-1">سجل الحضور - {student.name}</h2>

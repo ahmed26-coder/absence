@@ -250,7 +250,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
           )}
 
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-2 sm:gap-0 items-center justify-between">
             <Button size="sm" variant="outline" onClick={() => setShowDetails(true)} className="gap-1">
               <Info size={16} />
               ملف الحضور
