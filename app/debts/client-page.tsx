@@ -44,7 +44,7 @@ const labels = {
 }
 
 function getStatus(amountOwed: number, amountPaid: number) {
-  const p = (amountPaid / (amountOwed || 1)) * 100 // تفادي القسمة على صفر
+  const p = (amountPaid / (amountOwed || 1)) * 100
 
   if (p >= 100) {
     return { label: p > 100 ? "انتهى مع زيادة" : labels.paid, color: "bg-green-100 text-green-800", percentage: Math.min(100, p) }
@@ -76,11 +76,24 @@ export default function DebtTable() {
   const [isAddingNew, setIsAddingNew] = useState(false)
   const [newDebt, setNewDebt] = useState({ name: "", amountOwed: "", amountPaid: "" })
 
+  // ⭐ الإجماليات الثابتة
+  const [manualTotals, setManualTotals] = useState({
+    totalOwed: 0,
+    totalPaid: 0,
+    totalRemaining: 0,
+  })
+
   // ⭐ تحميل البيانات من Supabase
   useEffect(() => {
     const load = async () => {
       const data = await getDebtsFromSupabase()
       setDebts(data)
+
+      const totalOwed = data.reduce((s, d) => s + d.amount_owed, 0)
+      const totalPaid = data.reduce((s, d) => s + d.amount_paid, 0)
+      const totalRemaining = data.reduce((s, d) => s + Math.max(0, d.amount_owed - d.amount_paid), 0)
+
+      setManualTotals({ totalOwed, totalPaid, totalRemaining })
       setLoading(false)
     }
     load()
@@ -93,34 +106,37 @@ export default function DebtTable() {
     const owed = Number(newDebt.amountOwed)
     const paid = Number(newDebt.amountPaid) || 0
 
-    // نضيف كما هو، بدون تعديل للقيم (السماح بـ paid > owed)
     const res = await addDebtToSupabase({
       name: newDebt.name,
       amount_owed: owed,
       amount_paid: paid,
     })
 
-    if (res) setDebts([...debts, res])
+    if (res){ setDebts([...debts, res])
+       setManualTotals((prev) => ({
+    totalOwed: prev.totalOwed + res.amount_owed,
+    totalPaid: prev.totalPaid + res.amount_paid,
+    totalRemaining: prev.totalRemaining + Math.max(0, res.amount_owed - res.amount_paid),
+  }))
+}
 
     setNewDebt({ name: "", amountOwed: "", amountPaid: "" })
     setIsAddingNew(false)
   }
 
-  // ⭐ بدء التعديل (نستخدم القيم الكلية بدلاً من الـ deltas)
+  // ⭐ بدء التعديل
   const handleEditStart = (debt: Debt) => {
     setEditingId(debt.id)
-    setEditData(debt) // القيم الكلية
+    setEditData(debt)
   }
 
-  // ⭐ حفظ التعديل (نستخدم القيم الكلية مباشرة)
+  // ⭐ حفظ التعديل
   const handleEditSave = async () => {
     if (!editData || !editingId) return
 
-    // نحدث بالقيم الجديدة الكلية مباشرة (بدون + original)
     let newAmountOwed = Number(editData.amount_owed) || 0
     let newAmountPaid = Number(editData.amount_paid) || 0
 
-    // نضمن عدم سالب
     newAmountOwed = Math.max(0, newAmountOwed)
     newAmountPaid = Math.max(0, newAmountPaid)
 
@@ -134,12 +150,7 @@ export default function DebtTable() {
       setDebts(
         debts.map((d) =>
           d.id === editingId
-            ? {
-                ...d,
-                name: editData.name,
-                amount_owed: newAmountOwed,
-                amount_paid: newAmountPaid,
-              }
+            ? { ...d, name: editData.name, amount_owed: newAmountOwed, amount_paid: newAmountPaid }
             : d,
         ),
       )
@@ -149,7 +160,7 @@ export default function DebtTable() {
     setEditData(null)
   }
 
-  // ⭐ حذف
+  // ⭐ حذف (لا يغير الإجماليات)
   const handleDeleteDebt = async (id: string) => {
     const ok = await deleteDebtFromSupabase(id)
     if (ok) setDebts(debts.filter((d) => d.id !== id))
@@ -161,6 +172,7 @@ export default function DebtTable() {
 
   return (
     <div className="overflow-x-auto dir-rtl">
+
       {/* إضافة جديد */}
       {isAddingNew && (
         <div className="mb-6 p-6 bg-blue-50 rounded-lg border border-blue-200">
@@ -223,7 +235,7 @@ export default function DebtTable() {
 
       {/* زر إضافة */}
       {!isAddingNew && (
-        <div className=" my-4 mx-2">
+        <div className="my-4 mx-2">
           <button
             onClick={() => setIsAddingNew(true)}
             className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors font-medium flex items-center gap-2"
@@ -256,6 +268,7 @@ export default function DebtTable() {
 
             return (
               <TableRow key={debt.id} className="border-b border-teal-50 hover:bg-teal-50/50 transition-colors">
+
                 {/* الاسم */}
                 <TableCell className="font-medium text-slate-900">
                   {isEditing ? (
@@ -306,7 +319,7 @@ export default function DebtTable() {
                   <Badge className={`${status.color} border-0`}>{status.label}</Badge>
                 </TableCell>
 
-                {/* Progress Bar */}
+                {/* Progress */}
                 <TableCell>
                   <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                     <div
@@ -321,12 +334,10 @@ export default function DebtTable() {
                 <TableCell className="text-right">
                   {isEditing ? (
                     <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={handleEditSave}
-                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                      >
+                      <button onClick={handleEditSave} className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors">
                         <Check size={18} />
                       </button>
+
                       <button
                         onClick={() => {
                           setEditingId(null)
@@ -339,16 +350,11 @@ export default function DebtTable() {
                     </div>
                   ) : (
                     <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => handleEditStart(debt)}
-                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                      >
+                      <button onClick={() => handleEditStart(debt)} className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors">
                         <Edit2 size={18} />
                       </button>
-                      <button
-                        onClick={() => handleDeleteDebt(debt.id)}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      >
+
+                      <button onClick={() => handleDeleteDebt(debt.id)} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors">
                         <Trash2 size={18} />
                       </button>
                     </div>
@@ -362,39 +368,46 @@ export default function DebtTable() {
 
       {/* الإحصائيات */}
       <div className="border-t border-teal-100 bg-gradient-to-r from-teal-50 to-blue-50 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div>
             <p className="text-sm text-slate-600 mb-1">{labels.totalOwed}</p>
             <p className="text-xl font-bold text-slate-900">
-              {formatEGP(debts.reduce((sum, d) => sum + d.amount_owed, 0))}
+              {formatEGP(manualTotals.totalOwed)}
             </p>
           </div>
 
           <div>
             <p className="text-sm text-slate-600 mb-1">{labels.totalPaid}</p>
             <p className="text-xl font-bold text-teal-700">
-              {formatEGP(debts.reduce((sum, d) => sum + d.amount_paid, 0))}
+              {formatEGP(manualTotals.totalPaid)}
             </p>
           </div>
 
           <div>
             <p className="text-sm text-slate-600 mb-1">{labels.totalRemaining}</p>
             <p className="text-xl font-bold text-slate-900">
-              {formatEGP(debts.reduce((sum, d) => sum + Math.max(0, d.amount_owed - d.amount_paid), 0))}
+              {formatEGP(manualTotals.totalRemaining)}
             </p>
           </div>
 
           <div>
             <p className="text-sm text-slate-600 mb-1">{labels.overallProgress}</p>
             <p className="text-xl font-bold text-teal-700">
-              {Math.round(
-                (debts.reduce((s, d) => s + d.amount_paid, 0) /
-                  (debts.reduce((s, d) => s + d.amount_owed, 0) || 1)) *
-                100,
-              ) || 0}
+              {manualTotals.totalOwed === 0
+                ? 0
+                : Math.round((manualTotals.totalPaid / manualTotals.totalOwed) * 100)}
               %
             </p>
           </div>
+                  <div className="mt-6 flex justify-end">
+          <button
+            onClick={() => setManualTotals({ totalOwed: 0, totalPaid: 0, totalRemaining: 0 })}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            تصفير المجموع
+          </button>
+        </div>
         </div>
       </div>
     </div>
