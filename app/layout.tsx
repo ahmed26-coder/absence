@@ -46,18 +46,28 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const { getUserRole } = await import("@/app/auth/actions")
+  const { createClient } = await import("@/lib/supabase/server")
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const role = user ? await getUserRole() : "user"
+
   return (
     <html dir="rtl" lang="ar">
       <body className={`${cairo.variable} ${naskh.variable} antialiased`}>
         <ToastProvider>
-          <Navbar />
+          <Navbar user={user} role={role || "user"} />
           <main className="pt-20 md:pt-19 pb-20 md:pb-0">{children}</main>
-          <BottomNav />
+          <BottomNav role={role || "user"} />
         </ToastProvider>
       </body>
     </html>
