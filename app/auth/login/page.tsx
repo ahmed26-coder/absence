@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { login } from "@/app/auth/actions"
 
@@ -59,10 +60,9 @@ export default function LoginPage() {
                     />
                 </div>
                 <div className="space-y-2">
-                    <Input
+                    <PasswordInput
                         id="password"
                         name="password"
-                        type="password"
                         required
                         className="text-right"
                         dir="auto"
