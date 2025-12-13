@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Menu, LogOut, LogIn } from "lucide-react"
+import { LogOut, LogIn } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
@@ -13,9 +13,9 @@ import { signout } from "@/app/auth/actions"
 
 const links = [
   { href: "/", label: "الصفحة الرئيسية" },
-  { href: "/courses", label: "الدورات" },
-  { href: "/students", label: "الطلاب" },
-  { href: "/analytics", label: "الإحصائيات" },
+  { href: "/courses", label: "الدورات", adminOnly: true },
+  { href: "/students", label: "الطلاب", adminOnly: true },
+  { href: "/analytics", label: "الإحصائيات", adminOnly: true },
   { href: "/debts", label: "الديون", adminOnly: true },
 ]
 
@@ -70,7 +70,7 @@ export const Navbar = ({ user, role }: NavbarProps) => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="hidden gap-2 md:inline-flex text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="hidden gap-1 text-sm md:inline-flex text-destructive hover:text-destructive hover:bg-destructive/10"
                 aria-label="تسجيل خروج"
                 type="submit"
               >

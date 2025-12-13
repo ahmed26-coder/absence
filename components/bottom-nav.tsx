@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils"
 
 const items = [
   { href: "/", label: "الرئيسية", icon: Home },
-  { href: "/courses", label: "الدورات", icon: NotebookPen },
-  { href: "/students", label: "الطلاب", icon: Users },
+  { href: "/courses", label: "الدورات", icon: NotebookPen, adminOnly: true },
+  { href: "/students", label: "الطلاب", icon: Users, adminOnly: true },
   { href: "/analytics", label: "الإحصائيات", icon: BarChart3 },
   { href: "/debts", label: "الديون", icon: CircleDollarSign, adminOnly: true },
 ]
