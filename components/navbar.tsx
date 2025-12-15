@@ -142,7 +142,7 @@ export const Navbar = ({ user, role }: NavbarProps) => {
               <form action={signout} className="w-full">
                 <button
                   type="submit"
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-destructive transition hover:bg-destructive/10"
+                  className="flex w-full items-center gap-1 text-sm rounded-lg px-3 py-2 text-destructive transition hover:bg-destructive/10"
                 >
                   <LogOut size={18} />
                   تسجيل خروج
@@ -151,7 +151,7 @@ export const Navbar = ({ user, role }: NavbarProps) => {
             ) : (
               <Link
                 href="/auth/login"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-primary transition hover:bg-primary/10"
+                className="flex items-center gap-1 text-sm rounded-lg px-3 py-2 text-primary transition hover:bg-primary/10"
                 onClick={() => setOpen(false)}
               >
                 <LogIn size={18} />
