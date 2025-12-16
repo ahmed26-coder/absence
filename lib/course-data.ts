@@ -2,6 +2,7 @@ import type { Student, Course } from "./types"
 import { getStudentStats } from "./storage"
 import { getStoredCourses } from "./course-storage"
 
+
 export interface CourseOverview extends Course {
   studentIds: string[]
   trend: Array<{ date: string; present: number; absent: number; excused: number }>
