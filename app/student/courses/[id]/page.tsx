@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import StudentCourseDetailClient from "./course-detail-client"
 import { getCoursesFromSupabase } from "@/lib/supabase-storage"
+import { getCourseNotifications } from "@/lib/notifications"
 
 interface PageProps {
     params: Promise<{ id: string }>
@@ -17,8 +18,9 @@ export default async function StudentCourseDetailPage({ params }: PageProps) {
     }
 
     // Parallel data fetching
-    const [courses] = await Promise.all([
+    const [courses, courseNotifications] = await Promise.all([
         getCoursesFromSupabase(supabase),
+        getCourseNotifications(id, supabase)
     ])
 
     const course = courses.find(c => c.id === id)
@@ -50,6 +52,7 @@ export default async function StudentCourseDetailPage({ params }: PageProps) {
             studentId={user.id}
             isEnrolled={isEnrolled}
             initialAttendance={attendanceData || []}
+            courseNotifications={courseNotifications}
         />
     )
 }

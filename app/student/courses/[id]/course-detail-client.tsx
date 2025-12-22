@@ -2,17 +2,19 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
-import { ArrowRight, CheckCircle2, Clock, Users, XCircle, Calendar, MapPin, BookOpen } from "lucide-react"
+import { ArrowRight, CheckCircle2, Clock, Users, XCircle, Calendar, MapPin, BookOpen, AlertCircle, Info, ShieldAlert, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast-provider"
 import { updateAttendanceInSupabase } from "@/lib/supabase-storage"
-import type { Course } from "@/lib/types"
+import type { Course, Notification } from "@/lib/types"
+import { Badge } from "@/components/ui/badge"
 
 interface StudentCourseDetailClientProps {
     course: Course
     studentId: string
     isEnrolled: boolean
     initialAttendance: any[]
+    courseNotifications?: Notification[]
 }
 
 const StatsCard = ({
@@ -52,7 +54,8 @@ export default function StudentCourseDetailClient({
     course,
     studentId,
     isEnrolled,
-    initialAttendance
+    initialAttendance,
+    courseNotifications = []
 }: StudentCourseDetailClientProps) {
     const { pushToast } = useToast()
     const [attendance, setAttendance] = useState(initialAttendance)
@@ -96,6 +99,43 @@ export default function StudentCourseDetailClient({
     return (
         <div className="min-h-screen bg-emerald-50">
             <div className="mx-auto flex max-w-5xl flex-col gap-6">
+
+                {/* Notification Banners */}
+                {courseNotifications.length > 0 && (
+                    <div className="space-y-3 mt-4 text-start" dir="rtl">
+                        {courseNotifications.map((n) => (
+                            <div
+                                key={n.id}
+                                className={`flex items-start gap-4 p-5 rounded-2xl border shadow-sm transition-all hover:shadow-md ${n.priority === 'urgent'
+                                        ? "bg-rose-50 border-rose-100 text-rose-900"
+                                        : n.priority === 'important'
+                                            ? "bg-amber-50 border-amber-100 text-amber-900"
+                                            : "bg-blue-50 border-blue-100 text-blue-900"
+                                    }`}
+                            >
+                                <div className={`p-2.5 rounded-xl shrink-0 ${n.priority === 'urgent' ? "bg-rose-100/50" : n.priority === 'important' ? "bg-amber-100/50" : "bg-blue-100/50"
+                                    }`}>
+                                    {n.type === 'alert' ? <AlertCircle size={20} /> : n.type === 'administrative' ? <ShieldAlert size={20} /> : <Bell size={20} />}
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <h4 className="font-bold text-base leading-tight">
+                                            {n.title}
+                                        </h4>
+                                        <Badge
+                                            variant="outline"
+                                            className={`text-[10px] px-2 py-0 border-none ${n.priority === 'urgent' ? "bg-rose-500 text-white" : n.priority === 'important' ? "bg-amber-500 text-white" : "bg-blue-500 text-white"
+                                                }`}
+                                        >
+                                            {n.priority === 'urgent' ? 'عاجل' : n.priority === 'important' ? 'هام' : 'عادي'}
+                                        </Badge>
+                                    </div>
+                                    <p className="text-sm opacity-90 leading-relaxed max-w-3xl">{n.content}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Header */}
                 <div className="flex flex-col gap-3 text-start" dir="rtl">

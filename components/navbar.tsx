@@ -19,6 +19,7 @@ const links = [
   { href: "/students", label: "الطلاب", adminOnly: true },
   { href: "/analytics", label: "الإحصائيات", adminOnly: true },
   { href: "/debts", label: "الديون", adminOnly: true },
+  { href: "/notifications", label: "الاشعارات", adminOnly: true },
   // Student Links
   { href: "/student/dashboard", label: "لوحتي", studentOnly: true },
   { href: "/student/profile", label: "ملف تعريفي", studentOnly: true },

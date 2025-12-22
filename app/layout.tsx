@@ -80,7 +80,7 @@ export default async function RootLayout({
           <AuthListener />
           <Navbar user={user} role={role || "user"} profile={profile} />
           <main className="pt-20 md:pt-19 pb-20 md:pb-0">{children}</main>
-          <BottomNav role={role || "user"} />
+          <BottomNav role={role || "user"} user={user} />
         </ToastProvider>
       </body>
     </html>
