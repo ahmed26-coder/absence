@@ -4,6 +4,7 @@ import "./globals.css"
 import { Navbar } from "@/components/navbar"
 import { ToastProvider } from "@/components/ui/toast-provider"
 import { BottomNav } from "@/components/bottom-nav"
+import { AuthListener } from "@/components/auth-listener"
 
 const cairo = Cairo({
   variable: "--font-base",
@@ -46,18 +47,40 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const { getUserRole } = await import("@/app/auth/actions")
+  const { createClient } = await import("@/lib/supabase/server")
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const role = user ? await getUserRole() : "user"
+
+  console.log("🏠 Layout - User ID:", user?.id)
+  console.log("🏠 Layout - User Email:", user?.email)
+  console.log("🏠 Layout - Role from getUserRole():", role)
+
+  // Fetch profile for global avatar
+  let profile = null
+  if (user) {
+    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+    profile = data
+  }
+
   return (
     <html dir="rtl" lang="ar">
       <body className={`${cairo.variable} ${naskh.variable} antialiased`}>
         <ToastProvider>
-          <Navbar />
+          <AuthListener />
+          <Navbar user={user} role={role || "user"} profile={profile} />
           <main className="pt-20 md:pt-19 pb-20 md:pb-0">{children}</main>
-          <BottomNav />
+          <BottomNav role={role || "user"} />
         </ToastProvider>
       </body>
     </html>

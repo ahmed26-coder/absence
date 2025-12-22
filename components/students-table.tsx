@@ -12,9 +12,9 @@ interface StudentsTableProps {
   students: Student[]
   studentCourseSummaries: Record<string, StudentCourseSummary[]>
   onView: (studentId: string) => void
-  onEdit: (studentId: string) => void
-  onDelete: (studentId: string) => void
-  onAddNew: () => void
+  onEdit?: (studentId: string) => void
+  onDelete?: (studentId: string) => void
+  onAddNew?: () => void
   search: string
   onSearchChange: (value: string) => void
   showToolbar?: boolean
@@ -54,7 +54,7 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
                 className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 text-sm"
               />
             </div>
-            <Button onClick={onAddNew}>إضافة طالب جديد</Button>
+            {onAddNew && <Button onClick={onAddNew}>إضافة طالب جديد</Button>}
           </div>
         </div>
       )}
@@ -73,8 +73,8 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
             const summaries = studentCourseSummaries[student.id] || []
             const coursesCount = summaries.length
             const warnings = student.warnings ?? 0
-            const debt = student.debt ?? 0
-             return (
+            const debt = student.total_debt ?? 0
+            return (
               <div
                 key={student.id}
                 className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[1.8fr,1fr,1fr,1fr,1fr]"
@@ -91,14 +91,18 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
                     <Eye size={14} />
                     عرض
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => onEdit(student.id)} className="gap-1  text-blue-500 border-blue-500 hover:text-blue-700 hover:bg-accent/30">
-                    <Pencil size={14} />
-                    تعديل
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => onDelete(student.id)} className="gap-1">
-                    <Trash2 size={14} />
-                    حذف
-                  </Button>
+                  {onEdit && (
+                    <Button variant="outline" size="sm" onClick={() => onEdit(student.id)} className="gap-1  text-blue-500 border-blue-500 hover:text-blue-700 hover:bg-accent/30">
+                      <Pencil size={14} />
+                      تعديل
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button variant="destructive" size="sm" onClick={() => onDelete(student.id)} className="gap-1">
+                      <Trash2 size={14} />
+                      حذف
+                    </Button>
+                  )}
                 </div>
               </div>
             )

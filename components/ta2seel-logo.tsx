@@ -4,12 +4,13 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 
-type LogoSize = "nav" | "hero" | "card"
+type LogoSize = "nav" | "hero" | "card" | "max"
 
 const sizeMap: Record<LogoSize, string> = {
   nav: "h-10 w-auto",
   hero: "h-16 w-auto md:h-20",
   card: "h-12 w-auto",
+  max: " h-24 w-auto md:h-36",
 }
 
 interface Ta2seelLogoProps {

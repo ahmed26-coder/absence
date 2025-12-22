@@ -3,26 +3,31 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, NotebookPen, Users, BarChart3, CircleDollarSign } from "lucide-react"
-
 import { cn } from "@/lib/utils"
 
 const items = [
   { href: "/", label: "الرئيسية", icon: Home },
-  { href: "/courses", label: "الدورات", icon: NotebookPen },
-  { href: "/students", label: "الطلاب", icon: Users },
+  { href: "/courses", label: "الدورات", icon: NotebookPen, adminOnly: true },
+  { href: "/students", label: "الطلاب", icon: Users, adminOnly: true },
   { href: "/analytics", label: "الإحصائيات", icon: BarChart3 },
-  { href: "/debts", label: "الديون", icon: CircleDollarSign },
+  { href: "/debts", label: "الديون", icon: CircleDollarSign, adminOnly: true },
 ]
-
-export const BottomNav = () => {
+interface NavbarProps {
+  role: string
+}
+export const BottomNav = ({ role }: NavbarProps) => {
   const pathname = usePathname()
-
+  const isAdmin = role === "admin"
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border/60 bg-white/95 backdrop-blur shadow-sm md:hidden">
-      <div className="grid grid-cols-5 overflow-x-auto">
+      <div className={cn(
+        "overflow-x-auto",
+        isAdmin ? "grid grid-cols-5" : "grid grid-cols-4"
+      )}>
         {items.map((item) => {
-          const active = pathname === item.href
           const Icon = item.icon
+          if (item.adminOnly && !isAdmin) return null
+          const active = pathname === item.href
           return (
             <Link
               key={item.href}

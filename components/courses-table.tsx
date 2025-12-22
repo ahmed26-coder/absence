@@ -6,6 +6,7 @@ import { Eye, Pencil, Trash2 } from "lucide-react"
 import type { CourseOverview } from "@/lib/course-data"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
 
 interface CoursesTableProps {
   courses: CourseOverview[]
@@ -46,6 +47,11 @@ export const CoursesTable: React.FC<CoursesTableProps> = ({ courses, onView, onE
               <div>
                 <p className="text-base font-semibold text-foreground">{course.name}</p>
                 <p className="text-xs text-muted-foreground">{course.focus}</p>
+                <div className="mt-1">
+                  {course.course_type === "women" && <Badge variant="secondary" className="bg-pink-100 text-pink-800 hover:bg-pink-100">نساء فقط</Badge>}
+                  {course.course_type === "private" && <Badge variant="secondary" className="bg-gray-100 text-gray-800 hover:bg-gray-100">خاصة</Badge>}
+                  {course.course_type === "public" && <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">عامة</Badge>}
+                </div>
               </div>
               <div className="text-sm font-semibold text-foreground">عدد الطلاب: {course.studentIds.length}</div>
               <div className="space-y-1">

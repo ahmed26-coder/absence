@@ -1,4 +1,3 @@
-// Courses and attendance workspace
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -67,6 +66,15 @@ const CourseCard = ({
           متوسط الحضور {course.averageAttendance}%
         </span>
         <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold">{course.focus}</span>
+        {course.course_type === "women" && (
+          <span className="rounded-full bg-pink-100 px-2 py-1 text-[10px] font-semibold text-pink-800">للنساء فقط</span>
+        )}
+        {course.course_type === "private" && (
+          <span className="rounded-full bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-800">خاصة</span>
+        )}
+        {course.course_type === "public" && (
+          <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-800">عامة</span>
+        )}
       </div>
       <div className="mt-5 grid grid-cols-10 gap-3">
         {course.trend.map((session) => {
@@ -306,6 +314,7 @@ const CoursesContent = ({ initialActiveCourseId }: { initialActiveCourseId?: str
       color: course.color || "emerald",
       description: course.description,
       notes: course.notes,
+      course_type: course.course_type || "public",
     }
     const action = exists ? updateCourse(course.id, payload) : addCourse(payload)
     action
@@ -354,7 +363,7 @@ const CoursesContent = ({ initialActiveCourseId }: { initialActiveCourseId?: str
         notes: payload.notes,
         courses: payload.courseIds,
         age: payload.age,
-        debt: payload.debt,
+        total_debt: payload.debt,
         warnings: payload.warnings,
       })
       setStudentMeta((prev) => ({
@@ -378,7 +387,7 @@ const CoursesContent = ({ initialActiveCourseId }: { initialActiveCourseId?: str
         notes: payload.notes,
         courses: payload.courseIds,
         age: payload.age,
-        debt: payload.debt,
+        total_debt: payload.debt,
         warnings: payload.warnings,
       })
       if (created) {

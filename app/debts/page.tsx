@@ -1,26 +1,44 @@
-import DebtTable from "./client-page"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import DebtsClient from "./debts-client"
 
 export const metadata = {
-  title: "متتبع الديون",
-  description: "إدارة ومراقبة الديون المستحقة",
+  title: "طلبات الدفع - الإدارة",
+  description: "مراجعة واعتماد طلبات سداد الديون من الطلاب",
 }
 
-export default function Page() {
-  return (
-    <main className="min-h-screen bg-gradient-to-b from-teal-50 to-white" dir="rtl">
-      {/* Header */}
-      <div className="border-b border-teal-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <h1 className="text-2xl font-bold text-slate-900">متتبع الديون</h1>
-          <p className="text-slate-600 text-sm mt-1">إدارة ومراقبة الديون المستحقة</p>
-        </div>
-      </div>
+export default async function DebtsAdminPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="bg-white rounded-lg shadow-sm border border-teal-100">
-          <DebtTable />
-        </div>
+  if (!user) {
+    redirect("/auth/login")
+  }
+
+  // Verify admin role if needed, but the page route might be protected by middleware
+  // For now we just fetch pending payment requests
+
+  const { data: requests, error } = await supabase
+    .from("payment_requests")
+    .select(`
+            *,
+            student:profiles(full_name, avatar_url),
+            debt:debts(id, name, amount_owed, amount_paid)
+        `)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching payment requests:", error)
+  }
+
+  // Debug log to see exactly what's coming back
+  console.log("DEBUG - Requests from Supabase:", JSON.stringify(requests?.[0], null, 2))
+
+  return (
+    <main className="min-h-screen bg-gray-50/30 p-4 md:p-8" dir="rtl">
+      <div className="max-w-7xl mx-auto">
+        <DebtsClient initialRequests={requests || []} />
       </div>
     </main>
   )

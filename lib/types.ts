@@ -8,17 +8,18 @@ export interface AttendanceRecord {
 
 export interface Student {
   id: string
-  name: string
-  // attendance is now scoped by course: { [courseId]: { [date]: AttendanceRecord } }
-  // we keep string keys so a 'global' or null-course entries can be represented if needed
+  name: string // maps to full_name in DB
   attendance: Record<string, Record<string, AttendanceRecord>>
   courses?: string[]
   phone?: string
   email?: string
-  notes?: string
+  notes?: string // maps to debt_description or similar
   age?: number
-  debt?: number
+  total_debt?: number
+  total_paid?: number
   warnings?: number
+  avatar_url?: string
+  gender?: "male" | "female"
 }
 
 export interface AttendanceData {
@@ -47,4 +48,5 @@ export interface Course {
   color?: string
   description?: string
   notes?: string
+  course_type: "public" | "private" | "women" // renamed from course_type and updated values
 }

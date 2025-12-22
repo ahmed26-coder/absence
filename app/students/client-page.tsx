@@ -138,7 +138,7 @@ const StudentsContent = () => {
         email: payload.email,
         notes: payload.notes,
         age: payload.age,
-        debt: payload.debt,
+        total_debt: payload.debt,
         warnings: payload.warnings,
         courses: payload.courseIds,
       })
@@ -162,7 +162,7 @@ const StudentsContent = () => {
         email: payload.email,
         notes: payload.notes,
         age: payload.age,
-        debt: payload.debt,
+        total_debt: payload.debt,
         warnings: payload.warnings,
         courses: payload.courseIds,
       })
@@ -393,16 +393,6 @@ const StudentsContent = () => {
               >
                 <List size={16} />
               </Button>
-              <Button
-                onClick={() => {
-                  setEditingStudentId(null)
-                  setShowStudentForm(true)
-                }}
-                className="gap-2"
-              >
-                <Users size={16} />
-                إضافة طالب
-              </Button>
             </div>
           </div>
         </div>
@@ -416,24 +406,6 @@ const StudentsContent = () => {
             onView={(id) => {
               const s = studentLookup[id]
               if (s) setProfileStudent(s)
-            }}
-            onEdit={(id) => {
-              const student = studentLookup[id];
-              if (student) {
-                setEditingStudentId(id);
-                setShowStudentForm(true);
-                setEditingStudentId(id);
-                setShowStudentForm(true);
-              }
-            }}
-
-            onDelete={(id) => {
-              const s = studentLookup[id]
-              if (s) setStudentToDelete(s)
-            }}
-            onAddNew={() => {
-              setEditingStudentId(null)
-              setShowStudentForm(true)
             }}
             search={searchTerm}
             onSearchChange={(value) => {

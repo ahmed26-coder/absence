@@ -1,16 +1,21 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { use, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, CheckCircle2, Clock, List, Grid3x3, Users, XCircle } from "lucide-react"
+import { ArrowRight, CheckCircle2, Clock, List, Grid3x3, Users, XCircle, Plus, Trash2 } from "lucide-react"
 
 import { AttendanceProvider, useAttendance } from "@/components/attendance-context"
 import { StudentCard } from "@/components/student-card"
 import { StudentsTable } from "@/components/students-table"
+import { AddStudentsToCourseModal } from "@/components/add-students-to-course-modal"
+import { RemoveStudentsFromCourseModal } from "@/components/remove-students-from-course-modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { buildCourseData, type StudentWithCourses } from "@/lib/course-data"
 import { getAttendanceRecord } from "@/lib/storage"
+import { useToast } from "@/components/ui/toast-provider"
+import { enrollInCourse, unenrollStudentFromCourse } from "@/lib/supabase-storage"
+import type { Student } from "@/lib/types"
 
 interface CourseDetailsPageClientProps {
   courseId: string
@@ -23,8 +28,8 @@ const StatsCard = ({
   tone = "default",
 }: {
   label: string
-  value: number
-  icon: typeof Users
+  value: number | string
+  icon: any
   tone?: "default" | "success" | "danger" | "muted"
 }) => {
   const toneClasses =
@@ -50,7 +55,8 @@ const StatsCard = ({
 }
 
 const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
-  const { data } = useAttendance()
+  const { data, refreshData } = useAttendance()
+  const { pushToast } = useToast()
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "present" | "absent" | "excused">("all")
@@ -61,6 +67,8 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
     return "card"
   })
   const [currentPage, setCurrentPage] = useState(0)
+  const [isAddStudentsOpen, setIsAddStudentsOpen] = useState(false)
+  const [isRemoveStudentsOpen, setIsRemoveStudentsOpen] = useState(false)
   const itemsPerPage = 9
 
   useEffect(() => {
@@ -126,7 +134,7 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-amber-50 p-6 md:p-10">
+      <div className="min-h-screen bg-linear-to-b from-emerald-50 via-white to-amber-50 p-6 md:p-10">
         <div className="mx-auto max-w-4xl space-y-4 rounded-2xl border border-border/60 bg-white/90 p-8 text-center shadow-sm">
           <p className="text-lg font-bold text-foreground">لا يمكن العثور على هذه الدورة.</p>
           <p className="text-sm text-muted-foreground">تأكد من صحة الرابط أو عد إلى قائمة الدورات.</p>
@@ -140,16 +148,44 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
     )
   }
 
-  const handleViewStudent = () => {}
+  const handleAddStudents = async (studentIds: string[]): Promise<boolean> => {
+    try {
+      let successCount = 0
+      for (const studentId of studentIds) {
+        const ok = await enrollInCourse(studentId, courseId)
+        if (ok) successCount++
+      }
+      await refreshData()
+      return successCount > 0
+    } catch (error) {
+      console.error("Error adding students to course:", error)
+      return false
+    }
+  }
+
+  const handleRemoveStudents = async (studentIds: string[]): Promise<boolean> => {
+    try {
+      let successCount = 0
+      for (const studentId of studentIds) {
+        const ok = await unenrollStudentFromCourse(studentId, courseId)
+        if (ok) successCount++
+      }
+      await refreshData()
+      return successCount > 0
+    } catch (error) {
+      console.error("Error removing students from course:", error)
+      return false
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-amber-50 p-6 md:p-10">
+    <div className="min-h-screen bg-linear-to-b from-emerald-50 via-white to-amber-50 p-6 md:p-10">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
+          <div className="space-y-2 text-start" dir="rtl">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Link href="/courses" className="inline-flex items-center gap-1 text-primary hover:underline">
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="rotate-180" />
                 عودة إلى الدورات
               </Link>
               <span className="text-border">/</span>
@@ -161,7 +197,7 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
           <div className="flex items-center gap-2">
             <Button
               variant={viewMode === "card" ? "default" : "outline"}
-              size="icon-sm"
+              size="icon"
               onClick={() => setViewMode("card")}
               aria-label="عرض كبطاقات"
             >
@@ -169,7 +205,7 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
             </Button>
             <Button
               variant={viewMode === "list" ? "default" : "outline"}
-              size="icon-sm"
+              size="icon"
               onClick={() => setViewMode("list")}
               aria-label="عرض كقائمة"
             >
@@ -178,7 +214,7 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/60 bg-white/90 p-6 shadow-sm backdrop-blur">
+        <div className="rounded-2xl border border-border/60 bg-white/90 p-6 shadow-sm backdrop-blur text-start" dir="rtl">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
@@ -204,9 +240,29 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
             <StatsCard label="غياب" value={stats.absent} icon={XCircle} tone="danger" />
             <StatsCard label="عذر" value={stats.excused} icon={Clock} tone="muted" />
           </div>
+
+          <div className="mt-6 flex gap-2">
+            <Button
+              onClick={() => setIsAddStudentsOpen(true)}
+              size="sm"
+              className="gap-2"
+            >
+              <Plus size={16} />
+              إضافة طالب
+            </Button>
+            <Button
+              onClick={() => setIsRemoveStudentsOpen(true)}
+              size="sm"
+              variant="outline"
+              className="gap-2"
+            >
+              <Trash2 size={16} />
+              حذف طالب
+            </Button>
+          </div>
         </div>
 
-        <section id="students" className="space-y-4 rounded-2xl border border-border/60 bg-white/90 p-6 shadow-sm backdrop-blur">
+        <section id="students" className="space-y-4 rounded-2xl border border-border/60 bg-white/90 p-6 shadow-sm backdrop-blur text-start" dir="rtl">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-xl font-bold text-foreground">قائمة الطلاب</h2>
@@ -223,7 +279,7 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
                 }}
               />
               <select
-                className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value as typeof statusFilter)
@@ -242,10 +298,10 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
             <StudentsTable
               students={paginatedStudents}
               studentCourseSummaries={studentCourseSummaries}
-              onView={handleViewStudent}
-              onEdit={() => {}}
-              onDelete={() => {}}
-              onAddNew={() => {}}
+              onView={() => { }}
+              onEdit={() => { }}
+              onDelete={() => { }}
+              onAddNew={() => { }}
               search={searchTerm}
               onSearchChange={(value) => {
                 setSearchTerm(value)
@@ -263,8 +319,9 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
                   student={student}
                   selectedDate={selectedDate}
                   courseLabels={courseLabels}
-                  onNavigateToCourse={() => {}}
+                  onNavigateToCourse={() => { }}
                   courseSummaries={studentCourseSummaries[student.id]}
+                  currentCourseId={courseId}
                 />
               ))}
             </div>
@@ -303,6 +360,26 @@ const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
             </div>
           )}
         </section>
+
+        <AddStudentsToCourseModal
+          isOpen={isAddStudentsOpen}
+          onClose={() => setIsAddStudentsOpen(false)}
+          courseId={courseId}
+          courseName={course.name}
+          allStudents={data.students}
+          enrolledStudentIds={courseStudents.map((s) => s.id)}
+          onAddStudents={handleAddStudents}
+        />
+
+        <RemoveStudentsFromCourseModal
+          isOpen={isRemoveStudentsOpen}
+          onClose={() => setIsRemoveStudentsOpen(false)}
+          courseId={courseId}
+          courseName={course.name}
+          allStudents={data.students}
+          enrolledStudentIds={courseStudents.map((s) => s.id)}
+          onRemoveStudents={handleRemoveStudents}
+        />
       </div>
     </div>
   )
@@ -315,4 +392,3 @@ const CourseDetailsPageClient = ({ courseId }: CourseDetailsPageClientProps) => 
 )
 
 export default CourseDetailsPageClient
-

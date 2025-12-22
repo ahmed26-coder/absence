@@ -26,7 +26,7 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, stud
   const [age, setAge] = useState<string>(student.age ? String(student.age) : "")
   const [phone, setPhone] = useState(student.phone || "")
   const [email, setEmail] = useState(student.email || "")
-  const [debt, setDebt] = useState<string>(student.debt !== undefined ? String(student.debt) : "")
+  const [debt, setDebt] = useState<string>(student.total_debt !== undefined ? String(student.total_debt) : "")
   const [warnings, setWarnings] = useState<string>(student.warnings !== undefined ? String(student.warnings) : "0")
   const [notes, setNotes] = useState(student.notes || "")
   const [status, setStatus] = useState<AttendanceStatus | "">(currentAttendance.status as AttendanceStatus | "")
@@ -44,7 +44,7 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, stud
     setAge(student.age ? String(student.age) : "")
     setPhone(student.phone || "")
     setEmail(student.email || "")
-    setDebt(student.debt !== undefined ? String(student.debt) : "")
+    setDebt(student.total_debt !== undefined ? String(student.total_debt) : "")
     setWarnings(student.warnings !== undefined ? String(student.warnings) : "0")
     setNotes(student.notes || "")
     setCourses(student.courses || [])
@@ -76,7 +76,7 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, stud
         phone: phone.trim() || undefined,
         email: email.trim() || undefined,
         age: Number.isNaN(ageValue) ? undefined : ageValue,
-        debt: Number.isNaN(debtValue) ? undefined : debtValue,
+        total_debt: Number.isNaN(debtValue) ? undefined : debtValue,
         warnings: Number.isNaN(warningsValue) ? undefined : warningsValue,
         notes: notes.trim() || undefined,
         courses,
@@ -208,11 +208,10 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, stud
                         prev.includes(course.id) ? prev.filter((c) => c !== course.id) : [...prev, course.id]
                       )
                     }}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                      selected
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${selected
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border bg-white text-muted-foreground hover:border-primary/50"
-                    }`}
+                      }`}
                   >
                     {course.name}
                   </button>

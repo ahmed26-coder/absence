@@ -118,7 +118,7 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">المستحقات المالية</p>
-                <p className="text-sm font-semibold text-foreground">{student.debt ?? 0}</p>
+                <p className="text-sm font-semibold text-foreground">{student.total_debt ?? 0}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">عدد الإنذارات</p>

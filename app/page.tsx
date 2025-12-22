@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
-
+import { createClient } from "@/lib/supabase/server"
+import { getCoursesFromSupabase } from "@/lib/supabase-storage"
 import { LandingContent } from "./landing-client"
 
 const metadataBase = new URL("https://ta2seel.example.com") // TODO: replace with real domain
@@ -34,7 +35,14 @@ const jsonLd = {
   inLanguage: "ar",
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient()
+  const { data } = await supabase.auth.getUser()
+  const user = data.user
+
+  const allCourses = await getCoursesFromSupabase(supabase)
+  const featuredCourses = allCourses.slice(0, 3)
+
   return (
     <>
       <script
@@ -42,7 +50,7 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         suppressHydrationWarning
       />
-      <LandingContent />
+      <LandingContent featuredCourses={featuredCourses} user={user} />
     </>
   )
 }

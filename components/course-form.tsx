@@ -28,20 +28,21 @@ export const CourseForm: React.FC<CourseFormProps> = ({ open, onClose, onSubmit,
   const [notes, setNotes] = useState(initialData?.notes || "")
   const [schedule, setSchedule] = useState(initialData?.schedule || "")
   const [level, setLevel] = useState(initialData?.level || "")
+  const [type, setType] = useState(initialData?.course_type || "public")
   const [isLoading, setIsLoading] = useState(false)
 
   const isEdit = Boolean(initialData?.id)
 
   useEffect(() => {
-  if (open) {
-    document.body.style.overflow = "hidden";
-  } else {
-    document.body.style.overflow = "auto";
-  }
-  return () => {
-    document.body.style.overflow = "auto";
-  };
-}, [open]);
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [open]);
 
 
   useEffect(() => {
@@ -54,12 +55,11 @@ export const CourseForm: React.FC<CourseFormProps> = ({ open, onClose, onSubmit,
     setNotes(initialData?.notes || "")
     setSchedule(initialData?.schedule || "")
     setLevel(initialData?.level || "")
+    setType(initialData?.course_type || "public")
   }, [initialData, open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) return
-    setIsLoading(true)
     try {
       onSubmit({
         id: initialData?.id || crypto.randomUUID(),
@@ -74,6 +74,7 @@ export const CourseForm: React.FC<CourseFormProps> = ({ open, onClose, onSubmit,
         level: level.trim() || "",
         description: description.trim(),
         notes: notes.trim(),
+        course_type: type,
         trend: initialData?.trend || [],
       })
     } finally {
@@ -129,9 +130,24 @@ export const CourseForm: React.FC<CourseFormProps> = ({ open, onClose, onSubmit,
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="form-label">وصف مختصر / محور الدورة</label>
-            <Input value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="مثال: أحكام التجويد" disabled={isLoading} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="form-label">وصف مختصر / محور الدورة</label>
+              <Input value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="مثال: أحكام التجويد" disabled={isLoading} />
+            </div>
+            <div className="space-y-2">
+              <label className="form-label">نوع الدورة *</label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value as any)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isLoading}
+              >
+                <option value="public">عامة</option>
+                <option value="private">خاصة</option>
+                <option value="women">للنساء فقط</option>
+              </select>
+            </div>
           </div>
           <div className="space-y-2">
             <label className="form-label">الوصف التفصيلي</label>
@@ -155,8 +171,8 @@ export const CourseForm: React.FC<CourseFormProps> = ({ open, onClose, onSubmit,
             </LoadingButton>
           </div>
         </form>
-      </div>
-    </Dialog>
+      </div >
+    </Dialog >
   )
 }
 

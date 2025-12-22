@@ -91,7 +91,7 @@ export const buildCourseData = (
         const totalSessions = stats.present + stats.absent + stats.excused
         const attendanceRate =
           totalSessions > 0 ? Math.round((stats.present / totalSessions) * 100) : 0
-  
+
         return {
           courseId,
           courseName: course?.name || "دورة",
@@ -103,7 +103,7 @@ export const buildCourseData = (
     },
     {},
   )
-  
+
 
   return { courses, studentsWithCourses, assignments, sessionDates, studentCourseSummaries }
 }
