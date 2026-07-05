@@ -11,14 +11,22 @@ import { cn, isActivePath } from "@/lib/utils"
 import { Ta2seelLogo } from "./ta2seel-logo"
 import { signout } from "@/app/auth/actions"
 
-const links = [
+type NavLink = {
+  href: string
+  label: string
+  guestOnly?: boolean
+  adminOnly?: boolean
+  studentOnly?: boolean
+}
+
+const links: NavLink[] = [
   { href: "/", label: "الصفحة الرئيسية", guestOnly: true },
   { href: "/our-sheikh", label: " عن شيخنا", guestOnly: true },
   { href: "/faq", label: " الأسئلة الشائعة", guestOnly: true },
   { href: "/courses", label: "الدورات", adminOnly: true },
   { href: "/students", label: "الطلاب", adminOnly: true },
   { href: "/analytics", label: "الإحصائيات", adminOnly: true },
-  { href: "/debts", label: "الديون", adminOnly: true },
+  { href: "/debts", label: "المدفوعات", adminOnly: true },
   { href: "/notifications", label: "الاشعارات", adminOnly: true },
   // Student Links
   { href: "/student/dashboard", label: "لوحتي", studentOnly: true },
@@ -30,7 +38,7 @@ const links = [
 interface NavbarProps {
   user: User | null
   role: string
-  profile?: any
+  profile?: { avatar_url?: string | null } | null
 }
 
 export const Navbar = ({ user, role, profile }: NavbarProps) => {
@@ -40,7 +48,7 @@ export const Navbar = ({ user, role, profile }: NavbarProps) => {
   const isStudent = role === "user"
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 border-b border-border/60 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/75">
+    <header className="fixed inset-x-0 top-0 z-40 border-b border-border/60 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/75 print:hidden">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-3">
           <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/50 px-3 py-1.5">
@@ -54,7 +62,7 @@ export const Navbar = ({ user, role, profile }: NavbarProps) => {
 
         {/* Desktop Nav */}
         <nav className="hidden items-center gap-2 text-sm font-semibold md:flex">
-          {links.map((item: any) => {
+          {links.map((item) => {
             if (item.adminOnly && !isAdmin) return null
             if (item.studentOnly && (!isStudent || !user)) return null
             if (item.guestOnly && user) return null

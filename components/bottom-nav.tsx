@@ -7,7 +7,7 @@ import {
   NotebookPen,
   Users,
   BarChart3,
-  CircleDollarSign,
+  Landmark,
   LayoutDashboard,
   UserCircle,
   BookOpen,
@@ -29,7 +29,7 @@ const items = [
   { href: "/courses", label: "الدورات", icon: NotebookPen, adminOnly: true },
   { href: "/students", label: "الطلاب", icon: Users, adminOnly: true },
   { href: "/analytics", label: "الإحصائيات", icon: BarChart3, adminOnly: true },
-  { href: "/debts", label: "الديون", icon: CircleDollarSign, adminOnly: true },
+  { href: "/debts", label: "المدفوعات", icon: Landmark, adminOnly: true },
   { href: "/notifications", label: "الاشعارات", icon: Bell, adminOnly: true },
 
   // Student Links
@@ -57,7 +57,7 @@ export const BottomNav = ({ role, user }: BottomNavProps) => {
   })
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border/60 bg-white/95 backdrop-blur shadow-sm md:hidden">
+    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border/60 bg-white/95 backdrop-blur shadow-sm md:hidden print:hidden">
       <div
         className="grid w-full"
         style={{
