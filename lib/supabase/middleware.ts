@@ -2,37 +2,39 @@ import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function updateSession(request: NextRequest) {
-    let response = NextResponse.next({
-        request: {
-            headers: request.headers,
-        },
-    })
+    let supabaseResponse = NextResponse.next({ request })
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             cookies: {
-                get(name: string) {
-                    return request.cookies.get(name)?.value
+                getAll() {
+                    return request.cookies.getAll()
                 },
-                set(name: string, value: string, options: any) {
-                    response.cookies.set({
-                        name,
-                        value,
-                        ...options,
-                    })
-                },
-                remove(name: string, options: any) {
-                    response.cookies.set({
-                        name,
-                        value: '',
-                        ...options,
-                    })
+                setAll(cookiesToSet) {
+                    cookiesToSet.forEach(({ name, value }) =>
+                        request.cookies.set(name, value)
+                    )
+                    supabaseResponse = NextResponse.next({ request })
+                    cookiesToSet.forEach(({ name, value, options }) =>
+                        supabaseResponse.cookies.set(name, value, options)
+                    )
                 },
             },
         }
     )
+
+    // Redirects must carry any refreshed auth cookies with them
+    const redirectTo = (pathname: string) => {
+        const url = request.nextUrl.clone()
+        url.pathname = pathname
+        const redirectResponse = NextResponse.redirect(url)
+        supabaseResponse.cookies.getAll().forEach((cookie) =>
+            redirectResponse.cookies.set(cookie)
+        )
+        return redirectResponse
+    }
 
     // Refresh session if expired - required for Server Components
     let user = null
@@ -50,16 +52,12 @@ export async function updateSession(request: NextRequest) {
     // 0. Check Profile Completion (Onboarding)
     // If user is logged in but hasn't completed profile, force redirect to /complete-profile
     if (user && !user.user_metadata?.profile_completed && !path.startsWith("/complete-profile")) {
-        const url = request.nextUrl.clone()
-        url.pathname = "/complete-profile"
-        return NextResponse.redirect(url)
+        return redirectTo("/complete-profile")
     }
 
-    // NEW: If user HAS completed profile, prevent them from seeing /complete-profile again
+    // If user HAS completed profile, prevent them from seeing /complete-profile again
     if (user && user.user_metadata?.profile_completed && path.startsWith("/complete-profile")) {
-        const url = request.nextUrl.clone()
-        url.pathname = "/student/dashboard"
-        return NextResponse.redirect(url)
+        return redirectTo("/student/dashboard")
     }
 
     // 1. Require login for admin tools and the student portal
@@ -67,22 +65,13 @@ export async function updateSession(request: NextRequest) {
     const isProtectedRoute = protectedRoutes.some((route) => path.startsWith(route))
 
     if (isProtectedRoute && !user) {
-        const url = request.nextUrl.clone()
-        url.pathname = "/auth/login"
-        return NextResponse.redirect(url)
+        return redirectTo("/auth/login")
     }
 
     // 2. If logged in and trying to access auth pages OR public pages, redirect to dashboard
-    const publicPages = ["/", "/our-sheikh", "/faq"]
-    const isPublicPage = publicPages.includes(path) || path.startsWith("/auth")
-
-    // Exact match for '/' or starts with others
-    // Note: 'path' for root is '/'
     if (user && (path === "/" || path.startsWith("/our-sheikh") || path.startsWith("/faq") || path.startsWith("/auth"))) {
-        const url = request.nextUrl.clone()
-        url.pathname = "/student/dashboard"
-        return NextResponse.redirect(url)
+        return redirectTo("/student/dashboard")
     }
 
-    return response
+    return supabaseResponse
 }
