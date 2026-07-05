@@ -25,6 +25,8 @@ export default function NotificationsClient({ studentId, initialNotifications }:
             setNotifications(prev =>
                 prev.map(n => n.id === id ? { ...n, is_read: true } : n)
             )
+        } else {
+            pushToast("تعذّر تحديث حالة القراءة، حاول مرة أخرى", "error")
         }
     }
 

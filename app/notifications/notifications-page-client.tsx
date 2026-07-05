@@ -13,13 +13,13 @@ const NotificationsContent = () => {
         <div className="container mx-auto px-4 py-8 max-w-5xl">
             <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <Link href="/students">
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                            <ArrowRight size={20} />
-                        </Button>
-                    </Link>
+                    <Button asChild variant="ghost" size="icon" className="rounded-full">
+                        <Link href="/students" aria-label="العودة إلى قائمة الطلاب">
+                            <ArrowRight size={20} aria-hidden="true" />
+                        </Link>
+                    </Button>
                     <div>
-                        <h1 className="text-3xl font-black text-gray-900">إدارة التنبيهات</h1>
+                        <h1 className="text-3xl font-black text-foreground">إدارة التنبيهات</h1>
                         <p className="text-muted-foreground mt-1">أرسل تنبيهات مخصصة للطلاب عبر قنوات مختلفة.</p>
                     </div>
                 </div>

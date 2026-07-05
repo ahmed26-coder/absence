@@ -102,15 +102,20 @@ export function Select<T extends string = string>({ children, value, onValueChan
 export const SelectTrigger = ({
     children,
     className,
+    id,
+    "aria-label": ariaLabel,
 }: {
     children?: React.ReactNode
     className?: string
+    id?: string
+    "aria-label"?: string
 }) => {
     const { open, setOpen, triggerId, listboxId } = useSelectContext("SelectTrigger")
     return (
         <button
             type="button"
-            id={triggerId}
+            id={id ?? triggerId}
+            aria-label={ariaLabel}
             onClick={() => setOpen(!open)}
             aria-haspopup="listbox"
             aria-expanded={open}

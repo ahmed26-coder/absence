@@ -121,8 +121,9 @@ export const NotificationSender: React.FC<NotificationSenderProps> = ({ students
                     {/* Basic Info */}
                     <div className="space-y-4">
                         <div className="space-y-1.5">
-                            <Label>عنوان التنبيه</Label>
+                            <Label htmlFor="notif-title">عنوان التنبيه</Label>
                             <Input
+                                id="notif-title"
                                 value={formData.title}
                                 onChange={e => setFormData({ ...formData, title: e.target.value })}
                                 placeholder="مثلاً: تنبيه هام بخصوص موعد الاختبار"
@@ -130,8 +131,9 @@ export const NotificationSender: React.FC<NotificationSenderProps> = ({ students
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label>محتوى التنبيه</Label>
+                            <Label htmlFor="notif-content">محتوى التنبيه</Label>
                             <Textarea
+                                id="notif-content"
                                 value={formData.content}
                                 onChange={e => setFormData({ ...formData, content: e.target.value })}
                                 placeholder="اكتب رسالتك هنا..."
@@ -141,9 +143,9 @@ export const NotificationSender: React.FC<NotificationSenderProps> = ({ students
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <Label>نوع التنبيه</Label>
+                                <Label htmlFor="notif-type">نوع التنبيه</Label>
                                 <Select value={formData.type} onValueChange={(val: NotificationType) => setFormData({ ...formData, type: val })}>
-                                    <SelectTrigger>
+                                    <SelectTrigger id="notif-type" aria-label="نوع التنبيه">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -155,9 +157,9 @@ export const NotificationSender: React.FC<NotificationSenderProps> = ({ students
                                 </Select>
                             </div>
                             <div className="space-y-1.5">
-                                <Label>الأولوية</Label>
+                                <Label htmlFor="notif-priority">الأولوية</Label>
                                 <Select value={formData.priority} onValueChange={(val: NotificationPriority) => setFormData({ ...formData, priority: val })}>
-                                    <SelectTrigger>
+                                    <SelectTrigger id="notif-priority" aria-label="الأولوية">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
