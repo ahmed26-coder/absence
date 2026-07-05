@@ -2,12 +2,9 @@
 
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Sparkles, BookOpen, Target, Heart, ShieldCheck, Users, GraduationCap, ArrowLeft } from "lucide-react"
+import { Sparkles, BookOpen, Target, Heart, ShieldCheck, Users, GraduationCap } from "lucide-react"
 import { Ta2seelLogo } from "@/components/ta2seel-logo"
 import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/components/ui/toast-provider"
-import { enrollInCourse } from "@/lib/supabase-storage"
 import type { Course } from "@/lib/types"
 import type { User } from "@supabase/supabase-js"
 
@@ -30,24 +27,7 @@ interface LandingContentProps {
   user: User | null
 }
 
-export function LandingContent({ featuredCourses, user }: LandingContentProps) {
-  const router = useRouter()
-  const { pushToast } = useToast()
-
-  const handleEnroll = async (courseId: string) => {
-    if (!user) {
-      router.push("/auth/login")
-      return
-    }
-
-    const ok = await enrollInCourse(user.id, courseId)
-    if (ok) {
-      pushToast("تم التسجيل في الدورة بنجاح", "success")
-    } else {
-      pushToast("حدث خطأ أثناء التسجيل", "error")
-    }
-  }
-
+export function LandingContent({ featuredCourses }: LandingContentProps) {
   const typeLabels: Record<string, string> = {
     public: "عامة",
     private: "خاصة",
@@ -119,11 +99,9 @@ export function LandingContent({ featuredCourses, user }: LandingContentProps) {
                           <p className="text-xs text-gray-500 line-clamp-1">{course.instructor || "نخبة من العلماء"}</p>
                         </div>
                       </div>
-                      <Link href="/auth/register">
-                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-8">
-                          سجل الآن
-                        </Button>
-                      </Link>
+                      <Button asChild size="sm" className="h-8 shrink-0">
+                        <Link href="/auth/register">سجل الآن</Link>
+                      </Button>
                     </div>
                   </div>
                 ))
