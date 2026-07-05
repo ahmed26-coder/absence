@@ -1,54 +1,48 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
-import { createPortal } from "react-dom"
+import { Loader2, TriangleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Dialog } from "@/components/ui/dialog"
 
 interface DeleteConfirmModalProps {
   isOpen: boolean
   studentName: string
   onConfirm: () => void
   onCancel: () => void
+  isDeleting?: boolean
 }
 
-export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, studentName, onConfirm, onCancel }) => {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // lock background scroll while modal is open
-  useEffect(() => {
-    if (!isOpen) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    return () => {
-      document.body.style.overflow = prev || ""
-    }
-  }, [isOpen])
-
-  if (!isOpen || !mounted) return null
-
-  return createPortal(
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={onCancel}>
-      <div className="bg-white rounded-lg p-6 w-full max-w-xs shadow-lg" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-xl font-bold mb-4 text-red-600">تأكيد الحذف</h2>
-        <p className="text-gray-700 mb-6">
+export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
+  isOpen,
+  studentName,
+  onConfirm,
+  onCancel,
+  isDeleting = false,
+}) => {
+  return (
+    <Dialog open={isOpen} onClose={onCancel} className="max-w-sm">
+      <div className="space-y-4" dir="rtl">
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-destructive/10 p-2 text-destructive">
+            <TriangleAlert size={20} aria-hidden="true" />
+          </div>
+          <h2 className="text-xl font-bold text-destructive">تأكيد الحذف</h2>
+        </div>
+        <p className="text-foreground">
           هل أنت متأكد من حذف الطالب <span className="font-bold">{studentName}</span>؟
         </p>
-        <p className="text-sm text-gray-500 mb-6">سيتم حذف جميع سجلات الحضور الخاصة به أيضاً.</p>
-        <div className="flex gap-2 justify-end">
-          <Button type="button" variant="outline" onClick={onCancel}>
+        <p className="text-sm text-muted-foreground">سيتم حذف جميع سجلات الحضور الخاصة به أيضاً.</p>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isDeleting}>
             إلغاء
           </Button>
-          <Button type="button" variant="destructive" onClick={onConfirm}>
-            حذف
+          <Button type="button" variant="destructive" onClick={onConfirm} disabled={isDeleting} aria-busy={isDeleting} className="gap-2">
+            {isDeleting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            {isDeleting ? "جاري الحذف..." : "حذف"}
           </Button>
         </div>
       </div>
-    </div>,
-    document.body
+    </Dialog>
   )
 }

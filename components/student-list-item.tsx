@@ -10,6 +10,7 @@ import { Trash2, Edit2, Info } from "lucide-react"
 import { DeleteConfirmModal } from "./delete-confirm-modal"
 import { EditStudentModal } from "./edit-student-modal"
 import { StudentDetailsModal } from "./student-details-modal"
+import { useToast } from "@/components/ui/toast-provider"
 import type { StudentCourseSummary } from "@/lib/course-data"
 
 interface StudentListItemProps {
@@ -28,11 +29,13 @@ export const StudentListItem: React.FC<StudentListItemProps> = ({
   courseSummaries,
 }) => {
   const { updateAttendance, deleteStudent } = useAttendance()
+  const { pushToast } = useToast()
   const stats = getStudentStats(student, selectedDate, selectedDate)
   const record = getAttendanceRecord(student, selectedDate)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showEditStudent, setShowEditStudent] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const getStatusDisplay = (status: string | null) => {
     if (status === "H") return "حاضر"
@@ -48,8 +51,11 @@ export const StudentListItem: React.FC<StudentListItemProps> = ({
     return "bg-gray-100 text-gray-800"
   }
 
-  const handleDelete = () => {
-    deleteStudent(student.id)
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    const ok = await deleteStudent(student.id)
+    setIsDeleting(false)
+    pushToast(ok ? "تم حذف الطالب بنجاح" : "تعذّر حذف الطالب، حاول مرة أخرى", ok ? "success" : "error")
     setShowDeleteConfirm(false)
   }
 
@@ -139,6 +145,7 @@ export const StudentListItem: React.FC<StudentListItemProps> = ({
         studentName={student.name}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
+        isDeleting={isDeleting}
       />
 
       <EditStudentModal

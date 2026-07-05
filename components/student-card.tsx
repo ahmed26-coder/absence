@@ -15,7 +15,7 @@ import { Trash2, Edit2, Info } from "lucide-react"
 import { DeleteConfirmModal } from "./delete-confirm-modal"
 import { EditStudentModal } from "./edit-student-modal"
 import { StudentDetailsModal } from "./student-details-modal"
-import { updateAttendanceInSupabase } from "@/lib/supabase-storage"
+import { useToast } from "@/components/ui/toast-provider"
 import Link from "next/link"
 
 interface StudentCardProps {
@@ -36,6 +36,8 @@ export const StudentCard: React.FC<StudentCardProps> = ({
   currentCourseId,
 }) => {
   const { updateAttendance, deleteStudent } = useAttendance()
+  const { pushToast } = useToast()
+  const [isDeleting, setIsDeleting] = useState(false)
   const stats = getStudentStats(student, null, null, currentCourseId ?? null)
   const record = getAttendanceRecord(student, selectedDate, currentCourseId ?? null)
   const [reasonInput, setReasonInput] = useState("");
@@ -66,14 +68,13 @@ export const StudentCard: React.FC<StudentCardProps> = ({
       return;
     }
     setLoadingStatus(status as AttendanceStatus);
-    // update local + server via context (include course when available)
+    // A single write through the context (which upserts to Supabase and
+    // refreshes) — the previous extra direct upsert caused a duplicate
+    // request and a race with refreshData.
     const courseId = currentCourseId || null
-    updateAttendance(student.id, courseId, selectedDate, status, reason)
-
-    try {
-      await updateAttendanceInSupabase(student.id, courseId, selectedDate, status, reason)
-    } catch (err) {
-      console.error("خطأ في تحديث Supabase", err)
+    const ok = await updateAttendance(student.id, courseId, selectedDate, status as AttendanceStatus, reason)
+    if (!ok) {
+      pushToast("تعذّر حفظ الحضور، حاول مرة أخرى", "error")
     }
     setLoadingStatus(null);
   };
@@ -94,8 +95,15 @@ export const StudentCard: React.FC<StudentCardProps> = ({
   }
 
 
-  const handleDelete = () => {
-    deleteStudent(student.id)
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    const ok = await deleteStudent(student.id)
+    setIsDeleting(false)
+    if (ok) {
+      pushToast("تم حذف الطالب بنجاح", "success")
+    } else {
+      pushToast("تعذّر حذف الطالب، حاول مرة أخرى", "error")
+    }
     setShowDeleteConfirm(false)
   }
   const [loadingStatus, setLoadingStatus] = useState<AttendanceStatus | null>(null);
@@ -207,7 +215,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
             <>
               {createPortal(
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setIsReasonModalOpen(false)}>
-                  <div className="bg-white rounded-xl p-6 w-full max-w-xs shadow-xl space-y-4" onClick={(e) => e.stopPropagation()}>
+                  <div className="bg-card rounded-xl p-6 w-full max-w-xs shadow-xl space-y-4" onClick={(e) => e.stopPropagation()}>
                     <h3 className="text-lg font-bold">سبب الغياب</h3>
 
                     <input
@@ -223,18 +231,10 @@ export const StudentCard: React.FC<StudentCardProps> = ({
                       </Button>
 
                       <Button
-                        onClick={() => {
-                          // تحديث فوراً عند الضغط على "تم"
+                        onClick={async () => {
                           const courseId = currentCourseId || null
-                          updateAttendance(student.id, courseId, selectedDate, "E", reasonInput)
-
-                          // إرسال التحديث للسيرفر
-                          updateAttendanceInSupabase(student.id, courseId, selectedDate, "E", reasonInput)
-                            .then((success) => {
-                              if (!success) console.error("فشل تحديث الغياب مع السبب على Supabase");
-                            })
-                            .catch(console.error);
-
+                          const ok = await updateAttendance(student.id, courseId, selectedDate, "E" as AttendanceStatus, reasonInput)
+                          if (!ok) pushToast("تعذّر حفظ العذر، حاول مرة أخرى", "error")
                           setIsReasonModalOpen(false);
                           setReasonInput("");
                         }}
@@ -265,6 +265,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
         studentName={student.name}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
+        isDeleting={isDeleting}
       />
       <EditStudentModal isOpen={showEditStudent} student={student} onClose={() => setShowEditStudent(false)} />
       <StudentDetailsModal
