@@ -1,7 +1,17 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Cairo, Noto_Naskh_Arabic } from "next/font/google"
 import { MotionConfig } from "framer-motion"
-import { SITE_URL } from "@/lib/site"
+import {
+  SITE_URL,
+  SITE_NAME,
+  SITE_NAME_SHORT,
+  SITE_DESCRIPTION,
+  SITE_KEYWORDS,
+  HREFLANG_ALTERNATES,
+  OG_LOCALE,
+  OG_LOCALE_ALT,
+  THEME_COLOR,
+} from "@/lib/site"
 import "./globals.css"
 import { Navbar } from "@/components/navbar"
 import { ToastProvider } from "@/components/ui/toast-provider"
@@ -23,29 +33,65 @@ const naskh = Noto_Naskh_Arabic({
 })
 
 export const metadata: Metadata = {
-  title: "اكاديمية تأصيل للعلوم الشرعية – نظام متابعة الحضور",
-  description:
-    "نظام عربي لمتابعة حضور الطلاب في الدورات الشرعية، مع إحصائيات لكل طالب ولكل دورة، مصمم لسهولة استخدام المعلمين والإدارة.",
-  applicationName: "اكاديمية تأصيل",
   metadataBase: new URL(SITE_URL),
-  keywords: ["اكاديمية تأصيل", "نظام متابعة الحضور", "حضور الطلاب", "دورات شرعية", "تعليم شرعي"],
-  authors: [{ name: "Akademiyat Ta2seel" }],
+  title: {
+    default: `${SITE_NAME} | تعلّم العلوم الشرعية أونلاين`,
+    template: `%s | ${SITE_NAME_SHORT}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME_SHORT,
+  keywords: SITE_KEYWORDS,
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "education",
+  referrer: "origin-when-cross-origin",
+  formatDetection: { email: false, address: false, telephone: false },
+  alternates: {
+    canonical: "/",
+    languages: HREFLANG_ALTERNATES,
+  },
   openGraph: {
     type: "website",
     url: SITE_URL,
-    title: "اكاديمية تأصيل – نظام متابعة الحضور",
-    description: "منصة لمتابعة حضور طلاب الدورات الشرعية مع إحصائيات واضحة وسهلة.",
-    siteName: "اكاديمية تأصيل",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    siteName: SITE_NAME,
+    locale: OG_LOCALE,
+    alternateLocale: OG_LOCALE_ALT,
   },
   twitter: {
     card: "summary_large_image",
-    title: "اكاديمية تأصيل – نظام متابعة الحضور",
-    description: "منصة عربية لمتابعة حضور طلاب الدورات الشرعية.",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
   },
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
+  appleWebApp: {
+    capable: true,
+    title: SITE_NAME_SHORT,
+    statusBarStyle: "default",
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION }
+      : {},
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: THEME_COLOR,
+  colorScheme: "light",
 }
 
 export default async function RootLayout({
