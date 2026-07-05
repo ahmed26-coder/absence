@@ -154,3 +154,53 @@
   }
 }
 
+/* ===========================================================================
+   Payments (المدفوعات) module — design tokens, motion, and scrollbar helpers,
+   scoped to `.pay-scope` so they never leak into the app's global theme.
+   Only `--muted` overlaps an app token, so avoid Tailwind `*-muted` colour
+   utilities inside this scope; use the inline design vars instead.
+   =========================================================================== */
+.pay-scope {
+  --bg: oklch(0.955 0.012 110);
+  --paper: #ffffff;
+  --ink: oklch(0.28 0.025 150);
+  --ink2: oklch(0.46 0.02 148);
+  --muted: oklch(0.58 0.015 145);
+  --line: oklch(0.9 0.012 140);
+  --line2: oklch(0.94 0.01 140);
+  --green: oklch(0.52 0.13 150);
+  --green-d: oklch(0.44 0.12 150);
+  --green-bg: oklch(0.965 0.028 150);
+  --gold: oklch(0.63 0.09 76);
+  --gold-d: oklch(0.52 0.08 74);
+  --gold-bg: oklch(0.965 0.04 84);
+  --amber: oklch(0.6 0.12 66);
+  --amber-bg: oklch(0.965 0.05 78);
+  --rose: oklch(0.53 0.16 25);
+  --rose-bg: oklch(0.965 0.03 25);
+  --slate: oklch(0.55 0.02 235);
+  --slate-bg: oklch(0.96 0.015 235);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-base), "Cairo", system-ui, sans-serif;
+}
+
+/* Form controls don't inherit font-family by default. */
+.pay-scope button,
+.pay-scope input,
+.pay-scope textarea {
+  font-family: inherit;
+}
+
+.pay-scroll::-webkit-scrollbar { width: 0; height: 0; }
+.pay-scroll { scrollbar-width: none; }
+.pay-tabs::-webkit-scrollbar { height: 0; }
+.pay-tabs { scrollbar-width: none; }
+
+@keyframes payUp { from { transform: translateY(102%); } to { transform: translateY(0); } }
+@keyframes payFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes payPop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes payShake { 10%,90% { transform: translateX(-1px); } 20%,80% { transform: translateX(2px); } 30%,50%,70% { transform: translateX(-4px); } 40%,60% { transform: translateX(4px); } }
+@keyframes payToast { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes payPulse { 0%,100% { box-shadow: 0 0 0 0 oklch(0.66 0.11 78 / .35); } 50% { box-shadow: 0 0 0 6px oklch(0.66 0.11 78 / 0); } }
+

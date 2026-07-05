@@ -140,3 +140,68 @@ export function referenceDay(
   if (viewYear > todayYear || (viewYear === todayYear && viewMonth > todayMonth)) return 0
   return todayDay
 }
+
+export type YearTag = "current" | "upcoming" | "arrears" | "complete"
+
+export interface YearCell {
+  monthIndex: number
+  name: string
+  expected: number
+  incoming: number
+  remaining: number
+  rate: number
+  tag: YearTag
+  isCurrent: boolean
+  isFuture: boolean
+}
+
+export interface YearOverview {
+  cells: YearCell[]
+  rate: number
+}
+
+/**
+ * Aggregates income collection per month across the loaded year for the year
+ * overview grid. `today` fixes which months are past/current/future.
+ */
+export function buildYearOverview(
+  items: Payment[],
+  currentMonthIndex: number,
+  today: { year: number; month: number; day: number },
+  calendar: Calendar,
+): YearOverview {
+  let totalExpected = 0
+  let totalIncoming = 0
+  const cells: YearCell[] = []
+
+  for (let mi = 0; mi < 12; mi++) {
+    const monthItems = items.filter((it) => it.periodMonth === mi)
+    const refDay = referenceDay(today.year, mi, today.year, today.month, today.day)
+    const summary = computeSummary(monthItems, refDay)
+    totalExpected += summary.expected
+    totalIncoming += summary.incoming
+
+    const isCurrent = mi === currentMonthIndex
+    const isFuture = summary.expected === 0
+    let tag: YearTag
+    if (isCurrent) tag = "current"
+    else if (isFuture) tag = "upcoming"
+    else if (summary.remaining > 0) tag = "arrears"
+    else tag = "complete"
+
+    cells.push({
+      monthIndex: mi,
+      name: monthName(mi, calendar),
+      expected: summary.expected,
+      incoming: summary.incoming,
+      remaining: summary.remaining,
+      rate: summary.rate,
+      tag,
+      isCurrent,
+      isFuture,
+    })
+  }
+
+  const rate = totalExpected > 0 ? Math.round((totalIncoming / totalExpected) * 100) : 0
+  return { cells, rate }
+}
