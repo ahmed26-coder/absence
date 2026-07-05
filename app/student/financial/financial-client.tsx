@@ -30,6 +30,7 @@ export default function FinancialClient({ initialDebts, studentId }: FinancialCl
     const [newDebtName, setNewDebtName] = useState("")
     const [newDebtAmount, setNewDebtAmount] = useState("")
     const [newDebtPaid, setNewDebtPaid] = useState("0")
+    const [isAddingDebt, setIsAddingDebt] = useState(false)
 
     // Pay Debt States
     const [isPayModalOpen, setIsPayModalOpen] = useState(false)
@@ -41,27 +42,43 @@ export default function FinancialClient({ initialDebts, studentId }: FinancialCl
     const [isUploading, setIsUploading] = useState(false)
 
     const handleAddDebt = async () => {
-        if (!newDebtName || !newDebtAmount) {
+        if (isAddingDebt) return
+        const owed = Number(newDebtAmount)
+        const paid = Number(newDebtPaid) || 0
+        if (!newDebtName.trim() || !newDebtAmount) {
             pushToast("يرجى ملء جميع الحقول المطلوبة", "error")
             return
         }
+        if (!Number.isFinite(owed) || owed <= 0) {
+            pushToast("أدخل مبلغاً صحيحاً أكبر من صفر", "error")
+            return
+        }
+        if (paid < 0 || paid > owed) {
+            pushToast("المبلغ المدفوع يجب أن يكون بين صفر والمبلغ المستحق", "error")
+            return
+        }
 
-        const newDebt = await addDebtToSupabase({
-            name: newDebtName,
-            amount_owed: Number(newDebtAmount),
-            amount_paid: Number(newDebtPaid),
-            student_id: studentId
-        })
+        setIsAddingDebt(true)
+        try {
+            const newDebt = await addDebtToSupabase({
+                name: newDebtName.trim(),
+                amount_owed: owed,
+                amount_paid: paid,
+                student_id: studentId
+            })
 
-        if (newDebt) {
-            setDebts([newDebt, ...debts])
-            setIsAddDebtOpen(false)
-            setNewDebtName("")
-            setNewDebtAmount("")
-            setNewDebtPaid("0")
-            pushToast("تم إضافة الدين بنجاح", "success")
-        } else {
-            pushToast("فشل إضافة الدين", "error")
+            if (newDebt) {
+                setDebts([newDebt, ...debts])
+                setIsAddDebtOpen(false)
+                setNewDebtName("")
+                setNewDebtAmount("")
+                setNewDebtPaid("0")
+                pushToast("تم إضافة الدين بنجاح", "success")
+            } else {
+                pushToast("فشل إضافة الدين", "error")
+            }
+        } finally {
+            setIsAddingDebt(false)
         }
     }
 
@@ -92,9 +109,23 @@ export default function FinancialClient({ initialDebts, studentId }: FinancialCl
     }
 
     const handleSubmitPayment = async () => {
+        if (isUploading) return
+        const amount = Number(payAmount)
         if (!selectedDebtId || !payAmount) {
             pushToast("يرجى إدخال المبلغ", "error")
             return
+        }
+        if (!Number.isFinite(amount) || amount <= 0) {
+            pushToast("أدخل مبلغاً صحيحاً أكبر من صفر", "error")
+            return
+        }
+        const selectedDebt = debts.find((d) => d.id === selectedDebtId)
+        if (selectedDebt) {
+            const debtRemaining = (selectedDebt.amount_owed || 0) - (selectedDebt.amount_paid || 0)
+            if (amount > debtRemaining) {
+                pushToast(`المبلغ يتجاوز المتبقي على هذا الدين (${Math.max(0, debtRemaining)} جنيه)`, "error")
+                return
+            }
         }
 
         setIsUploading(true)
@@ -113,7 +144,7 @@ export default function FinancialClient({ initialDebts, studentId }: FinancialCl
         const request = await createPaymentRequest({
             student_id: studentId,
             debt_id: selectedDebtId,
-            amount: Number(payAmount),
+            amount,
             note: payNote,
             proof_image_url: proofUrl
         })
@@ -135,17 +166,17 @@ export default function FinancialClient({ initialDebts, studentId }: FinancialCl
 
     return (
         <div className="space-y-6" dir="rtl">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold text-gray-900">الملف المالي</h1>
-                <div className="flex gap-2">
-                    <Link href="/student/financial/history">
-                        <Button variant="outline" className="gap-2 font-bold">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <h1 className="text-3xl font-bold text-foreground">الملف المالي</h1>
+                <div className="flex flex-wrap gap-2">
+                    <Button asChild variant="outline" className="gap-2 font-bold">
+                        <Link href="/student/financial/history">
                             <History size={16} />
                             سجل الدفعات
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                     <Button
-                        className="gap-2 bg-emerald-600 hover:bg-emerald-700 font-bold"
+                        className="gap-2 font-bold"
                         onClick={() => setIsAddDebtOpen(true)}
                     >
                         <Plus size={16} />
@@ -194,7 +225,9 @@ export default function FinancialClient({ initialDebts, studentId }: FinancialCl
                         </div>
                     </div>
                     <div className="flex justify-end pt-4">
-                        <Button onClick={handleAddDebt} className="w-full font-bold">حفظ</Button>
+                        <Button onClick={handleAddDebt} disabled={isAddingDebt} aria-busy={isAddingDebt} className="w-full font-bold gap-2">
+                            {isAddingDebt ? (<><Clock className="animate-spin" size={16} aria-hidden="true" /> جاري الحفظ...</>) : "حفظ"}
+                        </Button>
                     </div>
                 </Dialog>
             </div>
@@ -323,45 +356,45 @@ export default function FinancialClient({ initialDebts, studentId }: FinancialCl
                     <div className="grid gap-2">
                         <Label htmlFor="payImage" className="text-right font-bold">صورة الإيصال (إثبات الدفع)</Label>
                         {!payFile ? (
-                            <div
-                                className="border-2 border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center gap-3 hover:border-emerald-400 hover:bg-emerald-50/30 transition-all cursor-pointer group"
-                                onClick={() => document.getElementById('payImage')?.click()}
+                            <label
+                                htmlFor="payImage"
+                                className="border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center justify-center gap-3 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer group focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
                             >
-                                <div className="p-3 bg-gray-50 rounded-full text-gray-400 group-hover:text-emerald-500 group-hover:bg-emerald-50 transition-colors">
-                                    <ImageIcon size={32} />
+                                <div className="p-3 bg-muted rounded-full text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 transition-colors">
+                                    <ImageIcon size={32} aria-hidden="true" />
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-sm font-bold text-gray-700">اضغط هنا لاختيار صورة</p>
-                                    <p className="text-xs text-muted-foreground mt-1">يُقبل الملفات بصيغة JPG, PNG</p>
+                                    <p className="text-sm font-bold text-foreground">اضغط هنا لاختيار صورة</p>
+                                    <p className="text-xs text-muted-foreground mt-1">يُقبل الملفات بصيغة JPG, PNG, WEBP (حتى 5 ميجابايت)</p>
                                 </div>
-                                <Input
+                                <input
                                     id="payImage"
                                     type="file"
-                                    accept="image/*"
-                                    className="hidden"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    className="sr-only"
                                     onChange={handleFileChange}
                                 />
-                            </div>
+                            </label>
                         ) : (
-                            <div className="relative group overflow-hidden rounded-xl border-2 border-emerald-100 bg-gray-50 aspect-video">
+                            <div className="relative overflow-hidden rounded-xl border-2 border-primary/20 bg-muted aspect-video">
                                 {previewUrl && (
+                                    // eslint-disable-next-line @next/next/no-img-element
                                     <img
                                         src={previewUrl}
-                                        alt="Preview"
+                                        alt="معاينة صورة الإيصال"
                                         className="w-full h-full object-contain"
                                     />
                                 )}
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        className="rounded-full h-8 w-8 p-0"
-                                        onClick={handleRemoveFile}
-                                    >
-                                        <X size={16} />
-                                    </Button>
-                                    <p className="text-white text-xs font-bold">حذف وصورة أخرى</p>
-                                </div>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="destructive"
+                                    className="absolute top-2 end-2 h-8 w-8 rounded-full p-0"
+                                    onClick={handleRemoveFile}
+                                    aria-label="حذف الصورة واختيار صورة أخرى"
+                                >
+                                    <X size={16} aria-hidden="true" />
+                                </Button>
                             </div>
                         )}
                         <p className="text-[10px] text-muted-foreground leading-relaxed mt-1">
@@ -373,11 +406,12 @@ export default function FinancialClient({ initialDebts, studentId }: FinancialCl
                     <Button
                         onClick={handleSubmitPayment}
                         disabled={isUploading}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 font-bold gap-2"
+                        aria-busy={isUploading}
+                        className="w-full font-bold gap-2"
                     >
                         {isUploading ? (
                             <>
-                                <Clock className="animate-spin" size={16} />
+                                <Clock className="animate-spin" size={16} aria-hidden="true" />
                                 جاري الرفع...
                             </>
                         ) : (
