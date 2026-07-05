@@ -62,10 +62,6 @@ export default async function RootLayout({
 
   const role = user ? await getUserRole() : "user"
 
-  console.log("🏠 Layout - User ID:", user?.id)
-  console.log("🏠 Layout - User Email:", user?.email)
-  console.log("🏠 Layout - Role from getUserRole():", role)
-
   // Fetch profile for global avatar
   let profile = null
   if (user) {

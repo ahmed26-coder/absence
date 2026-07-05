@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
 import { LogOut, LogIn, CircleUserRound } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { cn, isActivePath } from "@/lib/utils"
 import { Ta2seelLogo } from "./ta2seel-logo"
 import { signout } from "@/app/auth/actions"
 
@@ -34,17 +34,10 @@ interface NavbarProps {
 }
 
 export const Navbar = ({ user, role, profile }: NavbarProps) => {
-  const [open, setOpen] = useState(false)
   const pathname = usePathname()
-
-  console.log("📍 Navbar - Received role prop:", role)
-  console.log("📍 Navbar - User:", user?.email)
 
   const isAdmin = role === "admin"
   const isStudent = role === "user"
-
-  console.log("📍 Navbar - isAdmin:", isAdmin)
-  console.log("📍 Navbar - isStudent:", isStudent)
 
   return (
     <header className="fixed inset-x-0 top-0 z-40 border-b border-border/60 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/75">
@@ -66,13 +59,14 @@ export const Navbar = ({ user, role, profile }: NavbarProps) => {
             if (item.studentOnly && (!isStudent || !user)) return null
             if (item.guestOnly && user) return null
 
-            const active = pathname === item.href
+            const active = isActivePath(pathname, item.href)
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "rounded-xl px-3 py-2 transition hover:text-primary hover:bg-primary/10",
+                  "rounded-xl px-3 py-2 transition hover:text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   active ? "text-primary bg-primary/10 border border-primary/20" : "text-muted-foreground",
                 )}
               >
@@ -89,12 +83,11 @@ export const Navbar = ({ user, role, profile }: NavbarProps) => {
               <div className="hidden md:block">
                 <div className="h-9 w-9 overflow-hidden rounded-full border border-border/60 bg-muted flex items-center justify-center">
                   {profile?.avatar_url || user.user_metadata?.avatar_url ? (
-                    <img
-                      src={
-                        profile?.avatar_url ||
-                        user.user_metadata?.avatar_url
-                      }
-                      alt="Avatar"
+                    <Image
+                      src={profile?.avatar_url || user.user_metadata?.avatar_url}
+                      alt="الصورة الشخصية"
+                      width={36}
+                      height={36}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -143,7 +136,6 @@ export const Navbar = ({ user, role, profile }: NavbarProps) => {
               <Link
                 href="/auth/login"
                 className="flex items-center text-sm gap-1 md:gap-2 rounded-lg px-3 py-2 text-primary transition hover:bg-primary/10"
-                onClick={() => setOpen(false)}
               >
                 <LogIn size={18} />
                 تسجيل دخول
@@ -152,54 +144,6 @@ export const Navbar = ({ user, role, profile }: NavbarProps) => {
           </div>
         </div>
       </div>
-
-      {open && (
-        <div className="border-t border-border/60 bg-white md:hidden">
-          <div className="flex flex-col gap-1 px-4 py-3 text-sm font-semibold">
-            {links.map((item: any) => {
-              if (item.adminOnly && !isAdmin) return null
-              if (item.studentOnly && (!isStudent || !user)) return null
-              if (item.guestOnly && user) return null
-
-              const active = pathname === item.href
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "rounded-lg px-3 py-2 transition hover:text-primary hover:bg-primary/10",
-                    active ? "text-primary bg-primary/10 border border-primary/20" : "text-muted-foreground",
-                  )}
-                  onClick={() => setOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-            <div className="my-2 border-t border-border/60"></div>
-            {user ? (
-              <form action={signout} className="w-full">
-                <button
-                  type="submit"
-                  className="flex w-full items-center gap-1 text-sm rounded-lg px-3 py-2 text-destructive transition hover:bg-destructive/10"
-                >
-                  <LogOut size={18} />
-                  تسجيل خروج
-                </button>
-              </form>
-            ) : (
-              <Link
-                href="/auth/login"
-                className="flex items-center gap-1 text-sm rounded-lg px-3 py-2 text-primary transition hover:bg-primary/10"
-                onClick={() => setOpen(false)}
-              >
-                <LogIn size={18} />
-                تسجيل دخول
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
     </header>
   )
 }

@@ -17,7 +17,7 @@ import {
   Bell
 } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
-import { cn } from "@/lib/utils"
+import { cn, isActivePath } from "@/lib/utils"
 
 const items = [
   // Guest Links
@@ -66,17 +66,20 @@ export const BottomNav = ({ role, user }: BottomNavProps) => {
       >
         {visibleItems.map((item) => {
           const Icon = item.icon
-          const active = pathname === item.href
+          const active = isActivePath(pathname, item.href)
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 py-3 text-[10px] font-bold transition",
-                active ? "text-primary bg-primary/5 shadow-[inset_0_-2px_0_0_rgba(var(--primary),0.1)]" : "text-muted-foreground hover:text-primary",
+                "flex flex-col items-center justify-center gap-1 py-3 text-[10px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                active
+                  ? "text-primary bg-primary/5 border-b-2 border-primary"
+                  : "border-b-2 border-transparent text-muted-foreground hover:text-primary",
               )}
             >
-              <Icon size={18} className={cn(active && "animate-in zoom-in-95 duration-300")} />
+              <Icon size={18} className={cn(active && "motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-300")} />
               <span className="truncate w-full text-center px-1">{item.label}</span>
             </Link>
           )

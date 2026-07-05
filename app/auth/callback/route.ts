@@ -34,49 +34,33 @@ export async function GET(request: Request) {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error && data.user) {
-            console.log("🔐 User authenticated:", data.user.id)
-            console.log("📧 User email:", data.user.email)
-
             // Check user role - use maybeSingle() to avoid error if no record exists
-            const { data: roleData, error: roleError } = await supabase
+            const { data: roleData } = await supabase
                 .from("user_roles")
                 .select("role")
                 .eq("user_id", data.user.id)
                 .maybeSingle()
 
-            console.log(" Role query result:", roleData)
-            console.log(" Role query error:", roleError)
-
             const userRole = roleData?.role || "user"
-            console.log("✅ Final user role:", userRole)
-
-            // Check if profile is completed
             const profileCompleted = data.user.user_metadata?.profile_completed
-            console.log("📝 Profile completed:", profileCompleted)
 
-            // Redirect based on role and profile status
+            // Honor an explicit next target (e.g. the password-reset flow).
+            const next = searchParams.get("next")
             let redirectPath = "/"
 
-            if (userRole === "admin") {
-                // Admin users go to home page
+            if (next && next.startsWith("/")) {
+                redirectPath = next
+            } else if (userRole === "admin") {
                 redirectPath = "/"
-                console.log("🔑 Admin detected → redirecting to:", redirectPath)
+            } else if (profileCompleted) {
+                redirectPath = "/student/dashboard"
             } else {
-                // Regular users
-                if (profileCompleted) {
-                    // Profile completed → student dashboard
-                    redirectPath = "/student/dashboard"
-                    console.log("👨‍🎓 User with completed profile → redirecting to:", redirectPath)
-                } else {
-                    // Profile not completed → complete profile page
-                    redirectPath = "/complete-profile"
-                    console.log("📋 User needs to complete profile → redirecting to:", redirectPath)
-                }
+                redirectPath = "/complete-profile"
             }
 
             return NextResponse.redirect(`${origin}${redirectPath}`)
         } else {
-            console.error("Auth Callback Error:", error)
+            console.error("Auth callback error:", error?.code)
         }
     }
 
