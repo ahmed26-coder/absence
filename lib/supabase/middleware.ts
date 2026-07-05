@@ -49,15 +49,9 @@ export async function updateSession(request: NextRequest) {
 
     const path = request.nextUrl.pathname
 
-    // 0. Check Profile Completion (Onboarding)
-    // If user is logged in but hasn't completed profile, force redirect to /complete-profile
-    if (user && !user.user_metadata?.profile_completed && !path.startsWith("/complete-profile")) {
-        return redirectTo("/complete-profile")
-    }
-
-    // If user HAS completed profile, prevent them from seeing /complete-profile again
-    if (user && user.user_metadata?.profile_completed && path.startsWith("/complete-profile")) {
-        return redirectTo("/student/dashboard")
+    // Never interfere with the OAuth code exchange
+    if (path.startsWith("/auth/callback")) {
+        return supabaseResponse
     }
 
     // 1. Require login for admin tools and the student portal
@@ -68,9 +62,42 @@ export async function updateSession(request: NextRequest) {
         return redirectTo("/auth/login")
     }
 
-    // 2. If logged in and trying to access auth pages OR public pages, redirect to dashboard
-    if (user && (path === "/" || path.startsWith("/our-sheikh") || path.startsWith("/faq") || path.startsWith("/auth"))) {
-        return redirectTo("/student/dashboard")
+    if (!user) {
+        return supabaseResponse
+    }
+
+    const profileCompleted = Boolean(user.user_metadata?.profile_completed)
+
+    // The role is only needed for onboarding/auth-page decisions; skip the
+    // lookup on regular navigation by students who finished onboarding.
+    let isAdmin = false
+    if (!profileCompleted || path.startsWith("/auth") || path.startsWith("/complete-profile")) {
+        try {
+            const { data: roleRow } = await supabase
+                .from("user_roles")
+                .select("role")
+                .eq("user_id", user.id)
+                .maybeSingle()
+            isAdmin = roleRow?.role === "admin"
+        } catch (error) {
+            console.warn("Role lookup failed in middleware:", error)
+        }
+    }
+
+    // 2. Onboarding gate: students must complete their profile first.
+    // Admins are not students and never go through onboarding.
+    if (!isAdmin && !profileCompleted && !path.startsWith("/complete-profile")) {
+        return redirectTo("/complete-profile")
+    }
+
+    // Students who finished onboarding (and admins) have no business on /complete-profile
+    if ((isAdmin || profileCompleted) && path.startsWith("/complete-profile")) {
+        return redirectTo(isAdmin ? "/" : "/student/dashboard")
+    }
+
+    // 3. Signed-in users have no business on login/register/forgot-password
+    if (path.startsWith("/auth")) {
+        return redirectTo(isAdmin ? "/" : "/student/dashboard")
     }
 
     return supabaseResponse
