@@ -5,7 +5,7 @@ import { updateProfile } from "@/app/actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { UserCircle, Upload, Plus, Trash2, Mars, Venus } from "lucide-react"
+import { UserCircle, Upload, Plus, Trash2, Mars, Venus, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 
 const initialState = {
@@ -21,7 +21,7 @@ interface ProfileFormProps {
 }
 
 export default function ProfileForm({ initialProfile, initialDebts = [], userAvatar, availableCourses = [] }: ProfileFormProps) {
-    const [state, action] = useActionState(updateProfile, initialState)
+    const [state, action, isPending] = useActionState(updateProfile, initialState)
     // Priority: Existing Profile Image -> Google Image (Auth) -> Placeholder (null)
     const [avatarPreview, setAvatarPreview] = useState<string | null>(
         initialProfile?.avatar_url || userAvatar || null
@@ -82,7 +82,8 @@ export default function ProfileForm({ initialProfile, initialDebts = [], userAva
                 <div className="relative group cursor-pointer w-24 h-24">
                     <div className={`w-24 h-24 rounded-full flex items-center justify-center overflow-hidden border-2 ${avatarPreview ? 'border-emerald-500' : 'border-gray-200 bg-gray-100'}`}>
                         {avatarPreview ? (
-                            <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={avatarPreview} alt="الصورة الشخصية" className="w-full h-full object-cover" />
                         ) : (
                             <UserCircle className="w-16 h-16 text-gray-400" />
                         )}
@@ -274,13 +275,22 @@ export default function ProfileForm({ initialProfile, initialDebts = [], userAva
             </div>
 
             {state?.error && (
-                <div className="p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-100 text-center">
+                <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20 text-center" role="alert">
                     {state.error}
                 </div>
             )}
+            {!gender && (
+                <p className="text-center text-xs text-muted-foreground">الرجاء اختيار الجنس لإكمال التسجيل.</p>
+            )}
 
-            <Button type="submit" className="w-full text-lg py-6 font-bold bg-emerald-600 hover:bg-emerald-700 text-white">
-                حفظ ومتابعة
+            <Button
+                type="submit"
+                disabled={isPending || !gender}
+                aria-busy={isPending}
+                className="w-full text-lg py-6 font-bold gap-2"
+            >
+                {isPending && <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />}
+                {isPending ? "جاري الحفظ..." : "حفظ ومتابعة"}
             </Button>
         </form>
     )

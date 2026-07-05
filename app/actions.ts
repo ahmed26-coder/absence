@@ -50,8 +50,8 @@ export async function updateProfile(prevState: any, formData: FormData) {
                 })
 
             if (uploadError) {
-                console.error("Avatar upload error:", uploadError)
-                return { error: `فشل رفع الصورة: ${uploadError.message}`, success: false }
+                console.error("Avatar upload error:", uploadError.message)
+                return { error: "فشل رفع الصورة، يرجى المحاولة مرة أخرى", success: false }
             } else {
                 const { data: { publicUrl } } = supabase.storage
                     .from('avatars')
@@ -85,8 +85,8 @@ export async function updateProfile(prevState: any, formData: FormData) {
         .upsert(profileUpdates)
 
     if (profileError) {
-        console.error("Profile update error:", profileError)
-        return { error: "حدث خطأ أثناء حفظ الملف الشخصي: " + profileError.message, success: false }
+        console.error("Profile update error:", profileError.code)
+        return { error: "حدث خطأ أثناء حفظ الملف الشخصي، يرجى المحاولة مرة أخرى", success: false }
     }
 
     // 3. Mark User as Completed (Metadata)
@@ -135,9 +135,8 @@ export async function updateProfile(prevState: any, formData: FormData) {
         // Delete old debts
         const { error: deleteError } = await supabase.from("debts").delete().eq("student_id", user.id)
         if (deleteError) {
-            console.error("Error clearing old debts:", deleteError)
-            // Check if it's RLS policy failing
-            return { error: "فشل تحديث الديون (مسح القديم): " + deleteError.message, success: false }
+            console.error("Error clearing old debts:", deleteError.code)
+            return { error: "فشل تحديث الديون، يرجى المحاولة مرة أخرى", success: false }
         }
 
         if (debtsToInsert.length > 0) {
@@ -146,8 +145,8 @@ export async function updateProfile(prevState: any, formData: FormData) {
                 .insert(debtsToInsert)
 
             if (insertError) {
-                console.error("Debts insert error:", insertError)
-                return { error: "فشل حفظ الديون الجديدة: " + insertError.message, success: false }
+                console.error("Debts insert error:", insertError.code)
+                return { error: "فشل حفظ الديون، يرجى المحاولة مرة أخرى", success: false }
             }
         }
     }
