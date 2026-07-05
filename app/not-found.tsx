@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Home } from "lucide-react"
+import { HelpCircle, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export default function NotFound() {
           {/* Large 404 Number */}
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-100/40 via-white to-amber-100/40 rounded-3xl blur-2xl" />
-            <div className="relative rounded-3xl border border-border/60 bg-white/90 p-8 md:p-12 shadow-lg backdrop-blur">
+            <div className="relative rounded-3xl border border-border/60 bg-card/90 p-8 md:p-12 shadow-lg backdrop-blur">
               <h1 className="text-9xl md:text-[150px] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-amber-600 leading-none">
                 404
               </h1>
@@ -53,9 +53,9 @@ export default function NotFound() {
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="w-full sm:w-auto gap-2">
-              <Link href="/students">
-                <ArrowRight size={18} />
-                قائمة الطلاب
+              <Link href="/faq">
+                <HelpCircle size={18} />
+                الأسئلة الشائعة
               </Link>
             </Button>
           </div>
@@ -63,9 +63,9 @@ export default function NotFound() {
           {/* Additional Help Text */}
           <div className="pt-4 border-t border-border/60">
             <p className="text-sm text-muted-foreground">
-              إذا استمرت المشكلة،{" "}
-              <Link href="/" className="font-semibold text-primary hover:underline">
-                تواصل معنا
+              إذا استمرت المشكلة، يمكنك مراجعة{" "}
+              <Link href="/faq" className="font-semibold text-primary hover:underline">
+                الأسئلة الشائعة
               </Link>
             </p>
           </div>

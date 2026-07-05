@@ -1,14 +1,25 @@
 import type { MetadataRoute } from "next"
 
-const BASE_URL = "https://ta2seel.example.com" // TODO: replace with real domain
+import { SITE_URL } from "@/lib/site"
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
       allow: "/",
+      // Keep authenticated admin/student areas out of the index.
+      disallow: [
+        "/students",
+        "/analytics",
+        "/debts",
+        "/notifications",
+        "/courses",
+        "/student",
+        "/auth",
+        "/complete-profile",
+      ],
     },
-    sitemap: `${BASE_URL}/sitemap.xml`,
-    host: BASE_URL,
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   }
 }

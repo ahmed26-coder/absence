@@ -1,9 +1,10 @@
 import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
 import { getCoursesFromSupabase } from "@/lib/supabase-storage"
+import { SITE_URL } from "@/lib/site"
 import { LandingContent } from "./landing-client"
 
-const metadataBase = new URL("https://ta2seel.example.com") // TODO: replace with real domain
+const metadataBase = new URL(SITE_URL)
 
 export const metadata: Metadata = {
   title: "الرئيسية – اكاديمية تأصيل",

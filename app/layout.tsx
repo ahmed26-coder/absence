@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Cairo, Noto_Naskh_Arabic } from "next/font/google"
 import { MotionConfig } from "framer-motion"
+import { SITE_URL } from "@/lib/site"
 import "./globals.css"
 import { Navbar } from "@/components/navbar"
 import { ToastProvider } from "@/components/ui/toast-provider"
@@ -26,12 +27,12 @@ export const metadata: Metadata = {
   description:
     "نظام عربي لمتابعة حضور الطلاب في الدورات الشرعية، مع إحصائيات لكل طالب ولكل دورة، مصمم لسهولة استخدام المعلمين والإدارة.",
   applicationName: "اكاديمية تأصيل",
-  metadataBase: new URL("https://ta2seel.example.com"), // TODO: replace with real domain
+  metadataBase: new URL(SITE_URL),
   keywords: ["اكاديمية تأصيل", "نظام متابعة الحضور", "حضور الطلاب", "دورات شرعية", "تعليم شرعي"],
   authors: [{ name: "Akademiyat Ta2seel" }],
   openGraph: {
     type: "website",
-    url: "https://ta2seel.example.com",
+    url: SITE_URL,
     title: "اكاديمية تأصيل – نظام متابعة الحضور",
     description: "منصة لمتابعة حضور طلاب الدورات الشرعية مع إحصائيات واضحة وسهلة.",
     siteName: "اكاديمية تأصيل",
@@ -44,7 +45,6 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
   },
 }
 
