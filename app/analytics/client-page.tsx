@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
+import { getLocalDateISO } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { BarChart3, Users, NotebookPen, Calendar, CheckCircle2, XCircle, AlertCircle } from "lucide-react"
 
@@ -157,7 +158,7 @@ const AnalyticsContent = () => {
           </div>
         </div>
 
-        <StatisticsPanel students={studentsWithCourses} startDate={new Date().toISOString().split("T")[0]} endDate={new Date().toISOString().split("T")[0]} />
+        <StatisticsPanel students={studentsWithCourses} startDate={getLocalDateISO()} endDate={getLocalDateISO()} />
       </div>
     </div>
   )

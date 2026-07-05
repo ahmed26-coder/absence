@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { getLocalDateISO } from "@/lib/utils"
 import Link from "next/link"
 import { ArrowRight, CheckCircle2, Clock, Users, XCircle, Calendar, MapPin, BookOpen, AlertCircle, Info, ShieldAlert, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -59,7 +60,7 @@ export default function StudentCourseDetailClient({
 }: StudentCourseDetailClientProps) {
     const { pushToast } = useToast()
     const [attendance, setAttendance] = useState(initialAttendance)
-    const today = new Date().toISOString().split("T")[0]
+    const today = getLocalDateISO()
 
     const handleAttendance = async (status: "H" | "G" | "E") => {
         if (!isEnrolled) {

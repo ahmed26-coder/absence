@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { toLocalDateISO } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { Activity, BarChart3, CalendarClock, Users } from "lucide-react"
 
@@ -19,7 +20,7 @@ const buildTrend = (students: Student[], endDate: string) => {
   const days = Array.from({ length: 6 }, (_, idx) => {
     const d = new Date(baseDate)
     d.setDate(baseDate.getDate() - idx)
-    return d.toISOString().split("T")[0]
+    return toLocalDateISO(d)
   }).sort()
 
   return days.map((date) => {

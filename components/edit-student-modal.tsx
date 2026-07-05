@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { getLocalDateISO } from "@/lib/utils"
 import type { Student, AttendanceStatus } from "@/lib/types"
 import { useAttendance } from "./attendance-context"
 import { LoadingButton } from "@/components/ui/loading-button"
@@ -19,7 +20,7 @@ interface EditStudentModalProps {
 }
 
 export const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, student, onClose }) => {
-  const today = useMemo(() => new Date().toISOString().split("T")[0], [])
+  const today = useMemo(() => getLocalDateISO(), [])
   const currentAttendance = getAttendanceRecord(student, today) || { status: "", reason: "" }
 
   const [name, setName] = useState(student.name)

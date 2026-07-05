@@ -1,5 +1,6 @@
 "use client"
 import { createPortal } from "react-dom";
+import { getLocalDateISO, toLocalDateISO } from "@/lib/utils"
 import { useRef, useEffect } from "react";
 import { useMemo, useState } from "react"
 import { motion } from "framer-motion"
@@ -38,16 +39,16 @@ const StudentsContent = () => {
       });
     }
   }, [showSuggestions, searchTerm]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0]);
+  const [endDate, setEndDate] = useState(getLocalDateISO());
   const [filterDate, setFilterDate] = useState("");
 
   const { data, deleteStudent, updateStudent, addStudent, courses: coursesFromCtx } = useAttendance()
   const { pushToast } = useToast()
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
+  const [selectedDate, setSelectedDate] = useState(getLocalDateISO())
   const [startDate, setStartDate] = useState(() => {
     const date = new Date()
     date.setDate(date.getDate() - 30)
-    return date.toISOString().split("T")[0]
+    return toLocalDateISO(date)
   })
   const [, setIsSearching] = useState(false)
 

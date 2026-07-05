@@ -1,6 +1,7 @@
 "use client"
 
 import { use, useEffect, useMemo, useState } from "react"
+import { getLocalDateISO } from "@/lib/utils"
 import Link from "next/link"
 import { ArrowRight, CheckCircle2, Clock, List, Grid3x3, Users, XCircle, Plus, Trash2 } from "lucide-react"
 
@@ -57,7 +58,7 @@ const StatsCard = ({
 const CourseDetailsContent = ({ courseId }: CourseDetailsPageClientProps) => {
   const { data, refreshData } = useAttendance()
   const { pushToast } = useToast()
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
+  const [selectedDate, setSelectedDate] = useState(getLocalDateISO())
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "present" | "absent" | "excused">("all")
   const [viewMode, setViewMode] = useState<"list" | "card">(() => {

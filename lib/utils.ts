@@ -16,15 +16,20 @@ export function isActivePath(pathname: string, href: string): boolean {
 }
 
 /**
- * Today's date as YYYY-MM-DD in a fixed timezone (defaults to Cairo).
+ * A date as YYYY-MM-DD in a fixed timezone (defaults to Cairo).
  * Using the UTC-based toISOString() would roll over to the previous day for
  * this GMT+2/+3 audience during the first hours after local midnight.
  */
-export function getLocalDateISO(timeZone = "Africa/Cairo"): string {
+export function toLocalDateISO(date: Date = new Date(), timeZone = "Africa/Cairo"): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(new Date())
+  }).format(date)
+}
+
+/** Today's calendar date as YYYY-MM-DD in the app timezone. */
+export function getLocalDateISO(timeZone = "Africa/Cairo"): string {
+  return toLocalDateISO(new Date(), timeZone)
 }

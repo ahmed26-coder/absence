@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { getLocalDateISO, toLocalDateISO } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { Users, Compass, Grid3x3, List, Search, Filter, NotebookPen, BarChart3, Gauge } from "lucide-react"
 import Link from "next/link"
@@ -126,11 +127,11 @@ const CoursesContent = ({ initialActiveCourseId }: { initialActiveCourseId?: str
   const [showStudentForm, setShowStudentForm] = useState(false)
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null)
   const [profileStudent, setProfileStudent] = useState<Student | null>(null)
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
+  const [selectedDate, setSelectedDate] = useState(getLocalDateISO())
   const [startDate, setStartDate] = useState(() => {
     const date = new Date()
     date.setDate(date.getDate() - 30)
-    return date.toISOString().split("T")[0]
+    return toLocalDateISO(date)
   })
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -148,7 +149,7 @@ const CoursesContent = ({ initialActiveCourseId }: { initialActiveCourseId?: str
       });
     }
   }, [showSuggestions, searchTerm]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0]);
+  const [endDate, setEndDate] = useState(getLocalDateISO());
   const [filterDate, setFilterDate] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "present" | "absent" | "excused">("all")
   const [courseFilter, setCourseFilter] = useState("all")
@@ -162,7 +163,7 @@ const CoursesContent = ({ initialActiveCourseId }: { initialActiveCourseId?: str
   const [activeCourseId, setActiveCourseId] = useState<string | null>(initialActiveCourseId || null)
   const [courseStudentSearch, setCourseStudentSearch] = useState("")
   const [courseStatusFilter, setCourseStatusFilter] = useState<"all" | "present" | "absent" | "excused">("all")
-  const [courseDate, setCourseDate] = useState(new Date().toISOString().split("T")[0])
+  const [courseDate, setCourseDate] = useState(getLocalDateISO())
   const [courseToDelete, setCourseToDelete] = useState<CourseOverview | null>(null)
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null)
   const itemsPerPage = 12
@@ -574,7 +575,7 @@ const CoursesContent = ({ initialActiveCourseId }: { initialActiveCourseId?: str
                 variant="default"
                 size="sm"
                 className="gap-2"
-                onClick={() => setCourseDate(new Date().toISOString().split("T")[0])}
+                onClick={() => setCourseDate(getLocalDateISO())}
               >
                 تسجيل حضور اليوم
               </Button>

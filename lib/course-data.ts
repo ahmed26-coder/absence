@@ -1,4 +1,5 @@
 import type { Student, Course } from "./types"
+import { toLocalDateISO } from "@/lib/utils"
 import { getStudentStats } from "./storage"
 import { getStoredCourses } from "./course-storage"
 
@@ -18,7 +19,7 @@ export interface StudentCourseSummary {
   totalSessions: number
 }
 
-const formatDate = (date: Date) => date.toISOString().split("T")[0]
+const formatDate = (date: Date) => toLocalDateISO(date)
 
 const recentDates = (count: number) => {
   const today = new Date()

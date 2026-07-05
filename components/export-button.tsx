@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef } from "react"
+import { getLocalDateISO, toLocalDateISO } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Download } from "lucide-react"
 import type { AttendanceStatus, Student } from "@/lib/types"
@@ -77,7 +78,7 @@ export const ExportButton: React.FC<{ students: Student[]; startDate: string; en
     for (let i = 0; i < 7; i++) {
       const d = new Date(start)
       d.setDate(start.getDate() + i)
-      weekDates.push(d.toISOString().split("T")[0])
+      weekDates.push(toLocalDateISO(d))
     }
 
     const statusLabel = (status?: AttendanceStatus | null) => {
@@ -147,7 +148,7 @@ export const ExportButton: React.FC<{ students: Student[]; startDate: string; en
       },
     }
 
-    const today = new Date().toISOString().split("T")[0]
+    const today = getLocalDateISO()
     pdfMake.createPdf(docDefinition).download(`تقرير الحضور الأسبوعي ${today}.pdf`)
   }
 
