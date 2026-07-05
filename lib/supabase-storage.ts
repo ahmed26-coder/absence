@@ -151,10 +151,12 @@ export const updateStudentInSupabase = async (
 
     const { courses, name, notes, total_debt, total_paid, ...studentUpdates } = updates
 
-    // Map fields back to DB schema
+    // Map fields back to DB schema. Use presence checks (!== undefined) so an
+    // intentionally cleared field (empty string) is still written, instead of
+    // truthiness checks that would silently drop a cleared note/name.
     const dbUpdates: any = { ...studentUpdates }
-    if (name) dbUpdates.full_name = name
-    if (notes) dbUpdates.debt_description = notes
+    if (name !== undefined) dbUpdates.full_name = name
+    if (notes !== undefined) dbUpdates.debt_description = notes
     if (total_debt !== undefined) dbUpdates.total_debt = total_debt
     if (total_paid !== undefined) dbUpdates.total_paid = total_paid
 
@@ -843,15 +845,27 @@ export const updatePaymentRequestStatus = async (
     if (request) {
       const { data: debt } = await supabase
         .from("debts")
-        .select("amount_paid")
+        .select("amount_owed, amount_paid")
         .eq("id", request.debt_id)
         .single()
 
       if (debt) {
-        await supabase
+        const owed = Number(debt.amount_owed) || 0
+        const alreadyPaid = Number(debt.amount_paid) || 0
+        const requested = Number(request.amount) || 0
+        // Never credit more than what remains, so the balance can't go negative.
+        const remaining = Math.max(0, owed - alreadyPaid)
+        const credit = Math.min(Math.max(0, requested), remaining)
+
+        const { error: debtError } = await supabase
           .from("debts")
-          .update({ amount_paid: (debt.amount_paid || 0) + Number(request.amount) })
+          .update({ amount_paid: alreadyPaid + credit })
           .eq("id", request.debt_id)
+
+        if (debtError) {
+          console.error("Error crediting approved payment:", debtError)
+          return false
+        }
       }
     }
   }
@@ -868,13 +882,29 @@ export const uploadPaymentProof = async (
     const supabase = supabaseClient || createBrowserClient()
     if (!supabase) return null
 
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
+    // Only allow real image proofs, capped at 5 MB, to keep the public bucket
+    // from hosting arbitrary/executable files or oversized uploads.
+    const allowedTypes: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+    }
+    const ext = allowedTypes[file.type]
+    if (!ext) {
+      console.error("Rejected payment proof: unsupported type", file.type)
+      return null
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      console.error("Rejected payment proof: file too large", file.size)
+      return null
+    }
+
+    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${ext}`
     const filePath = `${studentId}/${fileName}`
 
     const { error: uploadError } = await supabase.storage
       .from('payment-proofs')
-      .upload(filePath, file)
+      .upload(filePath, file, { contentType: file.type })
 
     if (uploadError) {
       console.error("Error uploading proof:", uploadError)
