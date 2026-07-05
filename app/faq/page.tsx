@@ -1,10 +1,11 @@
 import type { Metadata } from "next"
 import { HelpCircle } from "lucide-react"
 
+import { breadcrumbJsonLd, jsonLdScript } from "@/lib/seo"
 import { FaqAccordion, type Faq } from "./faq-accordion"
 
 export const metadata: Metadata = {
-    title: "الأسئلة الشائعة – اكاديمية تأصيل",
+    title: "الأسئلة الشائعة",
     description: "أجوبة لأكثر الأسئلة تكراراً حول التسجيل، الرسوم، الشهادات، والدورات في أكاديمية تأصيل للعلوم الشرعية.",
     alternates: { canonical: "/faq" },
 }
@@ -36,14 +37,22 @@ const faqs: Faq[] = [
     },
 ]
 
-const faqJsonLd = {
+const graph = {
     "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map((faq) => ({
-        "@type": "Question",
-        name: faq.q,
-        acceptedAnswer: { "@type": "Answer", text: faq.a },
-    })),
+    "@graph": [
+        {
+            "@type": "FAQPage",
+            mainEntity: faqs.map((faq) => ({
+                "@type": "Question",
+                name: faq.q,
+                acceptedAnswer: { "@type": "Answer", text: faq.a },
+            })),
+        },
+        breadcrumbJsonLd([
+            { name: "الرئيسية", path: "/" },
+            { name: "الأسئلة الشائعة", path: "/faq" },
+        ]),
+    ],
 }
 
 export default function FAQPage() {
@@ -51,7 +60,7 @@ export default function FAQPage() {
         <div className="min-h-screen bg-muted/30 py-12 md:py-16 px-4" dir="rtl">
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+                dangerouslySetInnerHTML={{ __html: jsonLdScript(graph) }}
             />
             <div className="mx-auto max-w-3xl space-y-8">
                 <div className="text-center space-y-4">

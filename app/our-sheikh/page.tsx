@@ -1,14 +1,44 @@
 import type { Metadata } from "next"
-import { Book, GraduationCap, Library, ScrollText, User, Users, Heart } from "lucide-react"
+import { GraduationCap, Library, ScrollText, User, Users, Heart } from "lucide-react"
+
+import { personJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/seo"
+
+const SHEIKH_NAME = "الشيخ عمرو بن أبي الفتوح"
+const SHEIKH_TITLE = "المشرف العام على أكاديمية تأصيل للعلوم الشرعية"
+const SHEIKH_DESC =
+    "فضيلة الشيخ عمرو بن أبي الفتوح، المشرف العام على أكاديمية تأصيل للعلوم الشرعية، صاحب إجازات وأسانيد متصلة في القراءات والحديث والفقه، وله جهود بارزة في تعليم العلوم الشرعية وتخريج طلبة العلم."
 
 export const metadata: Metadata = {
-    title: "شيخنا – أكاديمية تأصيل",
-    description: "السيرة الذاتية لفضيلة الشيخ عمرو بن أبي الفتوح.",
+    title: "شيخنا الشيخ عمرو بن أبي الفتوح",
+    description: SHEIKH_DESC,
+    alternates: { canonical: "/our-sheikh" },
+    openGraph: {
+        title: `${SHEIKH_NAME} – أكاديمية تأصيل`,
+        description: SHEIKH_DESC,
+        url: "/our-sheikh",
+        type: "profile",
+    },
 }
 
 export default function OurSheikhPage() {
+    const graph = {
+        "@context": "https://schema.org",
+        "@graph": [
+            personJsonLd({ name: SHEIKH_NAME, jobTitle: SHEIKH_TITLE, description: SHEIKH_DESC, path: "/our-sheikh" }),
+            breadcrumbJsonLd([
+                { name: "الرئيسية", path: "/" },
+                { name: "شيخنا", path: "/our-sheikh" },
+            ]),
+        ],
+    }
+
     return (
         <div className="bg-linear-to-b from-amber-50/50 to-white min-h-screen">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: jsonLdScript(graph) }}
+                suppressHydrationWarning
+            />
             <div className="mx-auto max-w-4xl px-4 py-12 md:py-16 space-y-12">
 
                 {/* Header / Bio */}
@@ -30,7 +60,7 @@ export default function OurSheikhPage() {
                     </div>
                     <div className="prose prose-lg text-gray-600 leading-loose max-w-none text-justify">
                         <p>
-                            [نص السيرة الذاتية: ولد الشيخ حفظه الله في بيئة علمية محافظة، وبدأ رحلته في طلب العلم في سن مبكرة. حفظ القرآن الكريم وأتقنه، ثم انطلق ينهل من معين العلوم الشرعية على يد نخبة من علماء عصره...]
+                            نشأ الشيخ حفظه الله في بيئة علمية محافظة، وبدأ رحلته في طلب العلم في سنٍّ مبكرة، فحفظ القرآن الكريم وأتقن تلاوته، ثم انطلق ينهل من معين العلوم الشرعية على يد نخبة من علماء عصره.
                         </p>
                         <p>
                             تميز الشيخ بجلد وصبر في التحصيل، حيث تنقل بين البلدان للقاء الشيوخ والأخذ عنهم، جامعاً بين المنقول والمعقول، ومركزاً على تأصيل المسائل العلمية وضبطها.
