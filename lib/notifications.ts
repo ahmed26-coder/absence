@@ -74,7 +74,11 @@ export const createNotification = async (payload: SendNotificationPayload, supab
             .insert(recipientEntries)
 
         if (recipError) {
+            // A notification with no recipients reaches nobody. Roll back the
+            // template so the sender UI reports a real failure and can retry.
             console.error("Error creating notification recipients:", recipError)
+            await supabase.from("notifications").delete().eq("id", notification.id)
+            return null
         }
 
         // 4. Trigger External Channels (Mock)
@@ -113,14 +117,17 @@ export const getStudentNotifications = async (studentId: string, supabaseClient?
         notification:notifications(*)
       `)
             .eq("student_id", studentId)
-            .order("created_at", { referencedTable: "notifications", ascending: false })
 
         if (error) {
             console.error("Error fetching student notifications:", error)
             return []
         }
 
-        return data
+        // Ordering by a column on the embedded to-one resource is a no-op for
+        // the parent list, so sort newest-first here by the notification date.
+        return [...(data || [])].sort((a: any, b: any) =>
+            (b.notification?.created_at ?? "").localeCompare(a.notification?.created_at ?? "")
+        )
     } catch (error) {
         console.error("Unexpected error in getStudentNotifications:", error)
         return []
