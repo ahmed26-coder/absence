@@ -787,36 +787,6 @@ export const createPaymentRequest = async (
   return data
 }
 
-export const getPaymentRequests = async (
-  status: "pending" | "approved" | "rejected" | "all" = "all",
-  supabaseClient?: any
-): Promise<any[]> => {
-  const supabase = supabaseClient || createBrowserClient()
-  if (!supabase) return []
-
-  let query = supabase
-    .from("payment_requests")
-    .select(`
-      *,
-      student:profiles(full_name),
-      debt:debts(name, amount_owed, amount_paid)
-    `)
-    .order("created_at", { ascending: false })
-
-  if (status !== "all") {
-    query = query.eq("status", status)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error("Error fetching payment requests:", error)
-    return []
-  }
-
-  return data
-}
-
 export const updatePaymentRequestStatus = async (
   requestId: string,
   newStatus: "approved" | "rejected",

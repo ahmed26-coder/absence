@@ -27,6 +27,7 @@ const links: NavLink[] = [
   { href: "/students", label: "الطلاب", adminOnly: true },
   { href: "/analytics", label: "الإحصائيات", adminOnly: true },
   { href: "/debts", label: "المدفوعات", adminOnly: true },
+  { href: "/payment-requests", label: "طلبات الدفع", adminOnly: true },
   { href: "/notifications", label: "الاشعارات", adminOnly: true },
   // Student Links
   { href: "/student/dashboard", label: "لوحتي", studentOnly: true },

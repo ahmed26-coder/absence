@@ -55,7 +55,7 @@ export async function updateSession(request: NextRequest) {
     }
 
     // 1. Require login for admin tools and the student portal
-    const protectedRoutes = ["/debts", "/students", "/analytics", "/student", "/courses", "/notifications"]
+    const protectedRoutes = ["/debts", "/payment-requests", "/students", "/analytics", "/student", "/courses", "/notifications"]
     const isProtectedRoute = protectedRoutes.some((route) => path.startsWith(route))
 
     if (isProtectedRoute && !user) {

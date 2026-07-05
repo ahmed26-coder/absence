@@ -8,6 +8,7 @@ import {
   Users,
   BarChart3,
   Landmark,
+  ClipboardCheck,
   LayoutDashboard,
   UserCircle,
   BookOpen,
@@ -30,6 +31,7 @@ const items = [
   { href: "/students", label: "الطلاب", icon: Users, adminOnly: true },
   { href: "/analytics", label: "الإحصائيات", icon: BarChart3, adminOnly: true },
   { href: "/debts", label: "المدفوعات", icon: Landmark, adminOnly: true },
+  { href: "/payment-requests", label: "الطلبات", icon: ClipboardCheck, adminOnly: true },
   { href: "/notifications", label: "الاشعارات", icon: Bell, adminOnly: true },
 
   // Student Links
