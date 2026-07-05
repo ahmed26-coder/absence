@@ -62,8 +62,8 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
-    // 1. If trying to access /debts OR /students OR /analytics OR /student/*, require login
-    const protectedRoutes = ["/debts", "/students", "/analytics", "/student"]
+    // 1. Require login for admin tools and the student portal
+    const protectedRoutes = ["/debts", "/students", "/analytics", "/student", "/courses", "/notifications"]
     const isProtectedRoute = protectedRoutes.some((route) => path.startsWith(route))
 
     if (isProtectedRoute && !user) {
