@@ -19,10 +19,10 @@ export const LoadingButton: React.FC<LoadingButtonProps> = ({
   ...props
 }) => {
   return (
-    <Button disabled={isLoading || disabled} {...props}>
+    <Button disabled={isLoading || disabled} aria-busy={isLoading} {...props}>
       {isLoading ? (
         <>
-          <Loader2 size={16} className="animate-spin mr-2" />
+          <Loader2 size={16} className="animate-spin" aria-hidden="true" />
           {loadingText}
         </>
       ) : (

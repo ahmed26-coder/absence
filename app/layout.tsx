@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Cairo, Noto_Naskh_Arabic } from "next/font/google"
+import { MotionConfig } from "framer-motion"
 import "./globals.css"
 import { Navbar } from "@/components/navbar"
 import { ToastProvider } from "@/components/ui/toast-provider"
@@ -72,12 +73,14 @@ export default async function RootLayout({
   return (
     <html dir="rtl" lang="ar">
       <body className={`${cairo.variable} ${naskh.variable} antialiased`}>
-        <ToastProvider>
-          <AuthListener />
-          <Navbar user={user} role={role || "user"} profile={profile} />
-          <main className="pt-20 md:pt-19 pb-20 md:pb-0">{children}</main>
-          <BottomNav role={role || "user"} user={user} />
-        </ToastProvider>
+        <MotionConfig reducedMotion="user">
+          <ToastProvider>
+            <AuthListener />
+            <Navbar user={user} role={role || "user"} profile={profile} />
+            <main className="pt-20 md:pt-19 pb-20 md:pb-0">{children}</main>
+            <BottomNav role={role || "user"} user={user} />
+          </ToastProvider>
+        </MotionConfig>
       </body>
     </html>
   )
