@@ -3,6 +3,29 @@ import { getStorageData as getLocalAttendanceData } from "./storage"
 import { getStoredCourses } from "./course-storage"
 import type { AttendanceData, AttendanceRecord, AttendanceStatus, Course, Student } from "./types"
 
+const formatSupabaseError = (error: any) => {
+  if (!error) return null
+  return {
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+    code: error.code,
+    status: (error as any).status,
+  }
+}
+
+const shouldRetryWithLegacyAttendanceKey = (error: any) => {
+  const message = (error?.message || "").toLowerCase()
+  return (
+    error?.code === "PGRST116" || // conflict target mismatch
+    error?.code === "42703" || // missing column
+    message.includes("no unique") ||
+    message.includes("match any constraint") ||
+    (message.includes("conflict") && message.includes("constraint")) ||
+    (message.includes("course_id") && message.includes("does not exist"))
+  )
+}
+
 // ========== Student CRUD ==========
 
 export const getStudentsFromSupabase = async (supabaseClient?: any): Promise<Student[]> => {
@@ -367,21 +390,28 @@ export const updateAttendanceInSupabase = async (
       reason: reason || null,
     };
 
-    const { data, error } = await supabase
-      .from('attendance')
-      .upsert(payload, { onConflict: 'student_id,course_id,date' })
-      .select();
+    const upsert = (conflict: string, body = payload) =>
+      supabase.from('attendance').upsert(body, { onConflict: conflict }).select();
+
+    let { error } = await upsert('student_id,course_id,date');
+
+    if (error && shouldRetryWithLegacyAttendanceKey(error)) {
+      console.warn('[v0] Attendance upsert fell back to legacy constraint. Please apply migrations/001_add_course_id_to_attendance.sql', {
+        error: formatSupabaseError(error),
+        payload
+      });
+      const legacyPayload = error.code === '42703'
+        ? (({ course_id, ...rest }) => rest)(payload as any)
+        : payload;
+      const legacyResult = await upsert('student_id,date', legacyPayload);
+      error = legacyResult.error;
+    }
 
     if (error) {
       console.error('[v0] Error in upsert operation:', {
-        error,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
+        error: formatSupabaseError(error),
         payload
       });
-      // Fallback
       if (error.code === '42501') return false; // permission denied, let's stop recursion
 
       const { data: existing, error: fetchErr } = await supabase
@@ -392,11 +422,24 @@ export const updateAttendanceInSupabase = async (
         .eq('date', date)
         .single();
 
+      if (fetchErr) {
+        console.error('[v0] Fallback fetch failed:', formatSupabaseError(fetchErr));
+        return false;
+      }
+
       if (existing) {
-        await supabase.from('attendance').update(payload).eq('id', existing.id);
+        const { error: updateErr } = await supabase.from('attendance').update(payload).eq('id', existing.id);
+        if (updateErr) {
+          console.error('[v0] Fallback update failed:', formatSupabaseError(updateErr));
+          return false;
+        }
         return true;
       } else {
-        await supabase.from('attendance').insert([payload]);
+        const { error: insertErr } = await supabase.from('attendance').insert([payload]);
+        if (insertErr) {
+          console.error('[v0] Fallback insert failed:', formatSupabaseError(insertErr));
+          return false;
+        }
         return true;
       }
     }
