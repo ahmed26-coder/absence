@@ -14,7 +14,6 @@ interface DebtsClientProps {
 }
 
 export default function DebtsClient({ initialRequests }: DebtsClientProps) {
-    console.log("CLIENT - initialRequests:", initialRequests);
     const [requests, setRequests] = useState(initialRequests)
     const { pushToast } = useToast()
 

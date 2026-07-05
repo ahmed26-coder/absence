@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+import { redirect, notFound } from "next/navigation"
 import StudentCourseDetailClient from "./course-detail-client"
 import { getCoursesFromSupabase } from "@/lib/supabase-storage"
 import { getCourseNotifications } from "@/lib/notifications"
@@ -26,7 +26,7 @@ export default async function StudentCourseDetailPage({ params }: PageProps) {
     const course = courses.find(c => c.id === id)
 
     if (!course) {
-        return <div className="p-8 text-center">Course not found</div>
+        notFound()
     }
 
     // Verify enrollment

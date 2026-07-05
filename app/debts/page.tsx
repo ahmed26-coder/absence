@@ -29,17 +29,21 @@ export default async function DebtsAdminPage() {
     .order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Error fetching payment requests:", error)
+    console.error("Error fetching payment requests:", error.code)
   }
 
-  // Debug log to see exactly what's coming back
-  console.log("DEBUG - Requests from Supabase:", JSON.stringify(requests?.[0], null, 2))
-
   return (
-    <main className="min-h-screen bg-gray-50/30 p-4 md:p-8" dir="rtl">
+    <div className="min-h-screen bg-muted/30 p-4 md:p-8" dir="rtl">
       <div className="max-w-7xl mx-auto">
-        <DebtsClient initialRequests={requests || []} />
+        {error ? (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-center text-destructive">
+            <h2 className="mb-1 font-bold">تعذّر تحميل طلبات الدفع</h2>
+            <p className="text-sm">حدث خطأ أثناء جلب الطلبات. يرجى تحديث الصفحة والمحاولة مرة أخرى.</p>
+          </div>
+        ) : (
+          <DebtsClient initialRequests={requests || []} />
+        )}
       </div>
-    </main>
+    </div>
   )
 }
