@@ -1,6 +1,5 @@
 "use client"
 
-import { useMemo } from "react"
 import { Eye, Pencil, Trash2 } from "lucide-react"
 
 import type { Student } from "@/lib/types"
@@ -31,14 +30,9 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
   onSearchChange,
   showToolbar = true,
 }) => {
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    return students.filter((student) => student.name.toLowerCase().includes(term))
-  }, [students, search])
-
-
+  // The parent already filters (by name OR course) and paginates; render as-is.
   return (
-    <div className="space-y-3 rounded-2xl border border-border/60 bg-white/85 p-5 shadow-sm backdrop-blur">
+    <div className="space-y-3 rounded-2xl border border-border/60 bg-card/85 p-5 shadow-sm backdrop-blur">
       {showToolbar && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
@@ -46,7 +40,7 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
             <p className="text-sm text-muted-foreground">إدارة بيانات الطلاب وتوزيعهم على الدورات.</p>
           </div>
           <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 shadow-inner">
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 shadow-inner">
               <Input
                 value={search}
                 onChange={(e) => onSearchChange(e.target.value)}
@@ -60,16 +54,19 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
       )}
 
       <div className="overflow-hidden rounded-xl border border-border/60">
-        <div className="hidden grid-cols-[1.8fr,1fr,1fr,1fr,1fr] items-center gap-4 border-b border-border/60 bg-muted/50 px-4 py-3 text-sm font-semibold text-muted-foreground md:grid">
+        <div className="hidden grid-cols-[1.8fr,1fr,1fr,1fr,1fr,auto] items-center gap-4 border-b border-border/60 bg-muted/50 px-4 py-3 text-sm font-semibold text-muted-foreground md:grid">
           <span>اسم الطالب</span>
           <span>الجوال</span>
           <span>عدد الدورات</span>
           <span>الديون</span>
           <span>الإنذارات</span>
-          <span className="text-left">إجراءات</span>
+          <span className="text-end">إجراءات</span>
         </div>
         <div className="divide-y divide-border/60">
-          {filtered.map((student) => {
+          {students.length === 0 && (
+            <p className="px-4 py-10 text-center text-sm text-muted-foreground">لا يوجد طلاب مطابقون لبحثك.</p>
+          )}
+          {students.map((student) => {
             const summaries = studentCourseSummaries[student.id] || []
             const coursesCount = summaries.length
             const warnings = student.warnings ?? 0
@@ -77,7 +74,7 @@ export const StudentsTable: React.FC<StudentsTableProps> = ({
             return (
               <div
                 key={student.id}
-                className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[1.8fr,1fr,1fr,1fr,1fr]"
+                className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[1.8fr,1fr,1fr,1fr,1fr,auto]"
               >
                 <div>
                   <p className="text-lg font-bold text-foreground">{student.name}</p>

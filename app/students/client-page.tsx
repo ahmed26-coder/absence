@@ -111,6 +111,11 @@ const StudentsContent = () => {
 
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage))
 
+  // Guard against the page index pointing past a shrunken result set.
+  useEffect(() => {
+    if (currentPage > totalPages - 1) setCurrentPage(0)
+  }, [currentPage, totalPages])
+
   const studentLookup = useMemo(
     () =>
       studentsWithCourses.reduce<Record<string, Student>>((acc, student) => {
@@ -245,6 +250,7 @@ const StudentsContent = () => {
                       setSearchTerm(e.target.value);
                       setShowSuggestions(true);
                       setIsSearching(false);
+                      setCurrentPage(0);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
