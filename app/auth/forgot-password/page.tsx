@@ -19,14 +19,19 @@ export default function ForgotPasswordPage() {
         setError(null)
         setSuccess(null)
 
-        const result = await forgotPassword(formData)
+        try {
+            const result = await forgotPassword(formData)
 
-        if (result?.error) {
-            setError(result.error)
-        } else if (result?.success) {
-            setSuccess(result.success)
+            if (result?.error) {
+                setError(result.error)
+            } else if (result?.success) {
+                setSuccess(result.success)
+            }
+        } catch {
+            setError("تعذّر الاتصال بالخادم، يرجى المحاولة مرة أخرى")
+        } finally {
+            setIsLoading(false)
         }
-        setIsLoading(false)
     }
 
     return (
@@ -40,12 +45,12 @@ export default function ForgotPasswordPage() {
 
             <form action={handleSubmit} className="space-y-4">
                 {error && (
-                    <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive" dir="rtl">
+                    <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive" role="alert" dir="rtl">
                         {error}
                     </div>
                 )}
                 {success && (
-                    <div className="rounded-md bg-green-500/15 p-3 text-sm text-green-600" dir="rtl">
+                    <div className="rounded-md bg-green-500/15 p-3 text-sm text-green-700" role="status" dir="rtl">
                         {success}
                     </div>
                 )}

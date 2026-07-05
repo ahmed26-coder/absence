@@ -14,10 +14,12 @@ import LoginGoogle from "@/components/login-google"
 export default function RegisterPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [success, setSuccess] = useState<string | null>(null)
 
     async function handleSubmit(formData: FormData) {
         setIsLoading(true)
         setError(null)
+        setSuccess(null)
 
         const password = formData.get("password") as string
         const confirmPassword = formData.get("confirmPassword") as string
@@ -28,10 +30,20 @@ export default function RegisterPage() {
             return
         }
 
-        const result = await signup(formData)
+        try {
+            const result = await signup(formData)
 
-        if (result?.error) {
-            setError(result.error)
+            if (result?.error) {
+                setError(result.error)
+                setIsLoading(false)
+            } else if (result?.success) {
+                setSuccess(result.success)
+                setIsLoading(false)
+            }
+            // On success with a session the action redirects; loading stays on.
+        } catch {
+            // A thrown redirect propagates; only real failures land here.
+            setError("تعذّر الاتصال بالخادم، يرجى المحاولة مرة أخرى")
             setIsLoading(false)
         }
     }
@@ -47,8 +59,13 @@ export default function RegisterPage() {
 
             <form action={handleSubmit} className="space-y-4">
                 {error && (
-                    <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive" dir="rtl">
+                    <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive" role="alert" dir="rtl">
                         {error}
+                    </div>
+                )}
+                {success && (
+                    <div className="rounded-md bg-green-500/15 p-3 text-sm text-green-700" role="status" dir="rtl">
+                        {success}
                     </div>
                 )}
 

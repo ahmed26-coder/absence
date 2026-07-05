@@ -12,24 +12,38 @@ import { Label } from "@/components/ui/label"
 import { login } from "@/app/auth/actions"
 import LoginGoogle from "@/components/login-google"
 
+// Never render an attacker-controllable query param verbatim in the trusted
+// error banner — map known codes to Arabic and fall back to a generic message.
+const ERROR_MESSAGES: Record<string, string> = {
+    auth_code_error: "حدث خطأ أثناء المصادقة. الرجاء المحاولة مرة أخرى.",
+}
+
+function messageForParam(code: string | null): string | null {
+    if (!code) return null
+    return ERROR_MESSAGES[code] ?? "حدث خطأ أثناء تسجيل الدخول. الرجاء المحاولة مرة أخرى."
+}
+
 export default function LoginPage() {
     const searchParams = useSearchParams()
     const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<string | null>(searchParams.get("error"))
+    const [error, setError] = useState<string | null>(messageForParam(searchParams.get("error")))
 
     async function handleSubmit(formData: FormData) {
         setIsLoading(true)
         setError(null)
 
-        // Client-side validation could go here
+        try {
+            const result = await login(formData)
 
-        const result = await login(formData)
-
-        if (result?.error) {
-            setError(result.error)
+            if (result?.error) {
+                setError(result.error)
+                setIsLoading(false)
+            }
+            // On success the action redirects, so loading stays on.
+        } catch {
+            setError("تعذّر الاتصال بالخادم، يرجى المحاولة مرة أخرى")
             setIsLoading(false)
         }
-        // If success, the action redirects, so we don't need to unset loading
     }
 
     return (
@@ -43,8 +57,8 @@ export default function LoginPage() {
 
             <form action={handleSubmit} className="space-y-4">
                 {error && (
-                    <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive" dir="rtl">
-                        {error === "auth_code_error" ? "حدث خطأ أثناء المصادقة. الرجاء المحاولة مرة أخرى." : error}
+                    <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive" role="alert" dir="rtl">
+                        {error}
                     </div>
                 )}
 
@@ -61,6 +75,15 @@ export default function LoginPage() {
                     />
                 </div>
                 <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="password">كلمة المرور</Label>
+                        <Link
+                            href="/auth/forgot-password"
+                            className="text-xs text-muted-foreground cursor-pointer hover:text-primary hover:underline"
+                        >
+                            نسيت كلمة المرور؟
+                        </Link>
+                    </div>
                     <PasswordInput
                         id="password"
                         name="password"
@@ -68,15 +91,6 @@ export default function LoginPage() {
                         className="text-right"
                         dir="auto"
                     />
-                </div>
-                <div className="flex items-center justify-between">
-                    <Label htmlFor="password">كلمة المرور</Label>
-                    <Link
-                        href="/auth/forgot-password"
-                        className="text-xs text-muted-foreground cursor-pointer hover:text-primary hover:underline"
-                    >
-                        نسيت كلمة المرور؟
-                    </Link>
                 </div>
 
                 <Button className="w-full cursor-pointer" type="submit" disabled={isLoading}>
