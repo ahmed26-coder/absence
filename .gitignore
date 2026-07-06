@@ -27,6 +27,7 @@
 
 # local agent state
 .claude-flow/
+.claude/
 
 # debug
 npm-debug.log*
