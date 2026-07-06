@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { isAdmin } from "@/app/auth/actions"
 import { formatMoney } from "./logic"
 import { mapPayment } from "./queries"
+import { EXPENSE_CATS, INCOME_CATS } from "./constants"
 import type { Flow, Kind, Payment } from "./types"
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -27,6 +28,16 @@ export interface CreatePaymentInput {
 }
 
 const GENERIC_ERROR = "تعذّر إتمام العملية، يرجى المحاولة مرة أخرى"
+const OVERPAY_ERROR = "المبلغ أكبر من المتبقي"
+
+/**
+ * SQLSTATE raised by the enforce_payment_not_overpaid() trigger (migration 006)
+ * when a concurrent entry write would push the paid sum past `expected`. This is
+ * the race-loser path: both requests passed the app-level check, but the DB
+ * serialized them and rejected the second. Map it to the same friendly message
+ * the app-level guard uses instead of a generic failure.
+ */
+const OVERPAY_SQLSTATE = "PT001"
 
 /** Today's day-of-month in the app timezone — used to stamp entries/events. */
 function todayDay(): number {
@@ -77,6 +88,23 @@ export async function createPayment(input: CreatePaymentInput): Promise<ActionRe
   const dueDay = Math.min(28, Math.max(1, Math.round(input.dueDay)))
   const flow: Flow = input.flow === "expense" ? "expense" : "income"
   const kind: Kind = input.kind === "fixed" ? "fixed" : "variable"
+
+  // Validate period + category at the trust boundary rather than relying on the
+  // DB CHECK constraints (which would surface only as an opaque generic error).
+  const periodMonth = Math.round(Number(input.periodMonth))
+  if (!Number.isInteger(periodMonth) || periodMonth < 0 || periodMonth > 11) {
+    return { ok: false, error: "الشهر غير صالح" }
+  }
+  const periodYear = Math.round(Number(input.periodYear))
+  if (!Number.isInteger(periodYear) || periodYear < 2000 || periodYear > 3000) {
+    return { ok: false, error: "السنة غير صالحة" }
+  }
+  const category = (input.category || "").trim()
+  const allowedCats = flow === "income" ? INCOME_CATS : EXPENSE_CATS
+  if (!allowedCats.includes(category)) {
+    return { ok: false, error: "اختر تصنيفًا صحيحًا" }
+  }
+
   const day = todayDay()
 
   const { data, error } = await supabase
@@ -85,11 +113,11 @@ export async function createPayment(input: CreatePaymentInput): Promise<ActionRe
       name,
       flow,
       kind,
-      category: input.category,
+      category,
       expected,
       due_day: dueDay,
-      period_year: input.periodYear,
-      period_month: input.periodMonth,
+      period_year: periodYear,
+      period_month: periodMonth,
       note: (input.note || "").trim() || null,
       created_by: userId,
     })
@@ -140,6 +168,7 @@ export async function addEntry(paymentId: string, rawAmount: number | string): P
     created_by: userId,
   })
   if (error) {
+    if (error.code === OVERPAY_SQLSTATE) return { ok: false, error: OVERPAY_ERROR }
     console.error("addEntry error:", error.code)
     return { ok: false, error: GENERIC_ERROR }
   }
@@ -178,9 +207,12 @@ export async function quickConfirm(paymentId: string): Promise<ActionResult> {
 
   if (paid >= current.expected) {
     const quickIds = current.entries.filter((e) => e.isQuick).map((e) => e.id)
-    if (quickIds.length > 0) {
-      await supabase.from("payment_entries").delete().in("id", quickIds)
+    if (quickIds.length === 0) {
+      // Completed by manual partial entries — there is no quick confirmation to
+      // undo, so don't delete anything or record a misleading "reverted" event.
+      return { ok: true, payment: current }
     }
+    await supabase.from("payment_entries").delete().in("id", quickIds)
     await supabase.from("payment_events").insert({
       payment_id: paymentId,
       text: "تراجع عن تأكيد الوصول",
@@ -197,6 +229,7 @@ export async function quickConfirm(paymentId: string): Promise<ActionResult> {
       created_by: userId,
     })
     if (error) {
+      if (error.code === OVERPAY_SQLSTATE) return { ok: false, error: OVERPAY_ERROR }
       console.error("quickConfirm error:", error.code)
       return { ok: false, error: GENERIC_ERROR }
     }
