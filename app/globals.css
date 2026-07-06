@@ -192,6 +192,15 @@
   font-family: inherit;
 }
 
+/* Text inputs clear the native outline for styling, so restore a visible
+   keyboard-focus indicator via box-shadow (WCAG 2.4.7). box-shadow is used
+   because inline outline:none on the inputs would override any CSS outline. */
+.pay-scope input:focus-visible,
+.pay-scope textarea:focus-visible {
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--green);
+  border-radius: 8px;
+}
+
 .pay-scroll::-webkit-scrollbar { width: 0; height: 0; }
 .pay-scroll { scrollbar-width: none; }
 .pay-tabs::-webkit-scrollbar { height: 0; }

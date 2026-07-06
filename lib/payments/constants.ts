@@ -11,6 +11,10 @@ export const HIJRI_MONTHS = [
   "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة",
 ]
 
+// Anchor pair defining the fixed Hijri display offset (HIJRI_YEAR - GREG_YEAR).
+// The real year label is derived from the viewed period's Gregorian year in
+// `yearNumber`, so these are not the literal year shown — they only set the
+// Gregorian↔Hijri gap for the display-preference toggle.
 export const GREG_YEAR = 2026
 export const HIJRI_YEAR = 1448
 

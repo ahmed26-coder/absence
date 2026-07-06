@@ -138,13 +138,16 @@ function usePaymentsController(initialItems: Payment[], today: TodayInfo) {
         i.flow === "income" &&
         !i.cancelled &&
         paidOf(i) < i.expected &&
+        // refDay===0 means a future month that hasn't started; nothing is "due
+        // soon" there. Only flag the current month (refDay = today's day).
+        refDay > 0 &&
         i.dueDay >= refDay &&
         i.dueDay <= refDay + 2,
     )
     const showArrears = overdueItems.length > 0 && !arrearsDismissed && view === "month"
     const showDueSoon =
       dueSoonItems.length > 0 && !dueSoonDismissed && view === "month" && !showArrears
-    const mName = monthLabel(monthIndex, calendar).split(" ")[0]
+    const mName = monthLabel(monthIndex, calendar, today.year).split(" ")[0]
     return {
       showArrears,
       showDueSoon,
@@ -155,11 +158,11 @@ function usePaymentsController(initialItems: Payment[], today: TodayInfo) {
           }.`
         : "",
     }
-  }, [monthItems, refDay, arrearsDismissed, dueSoonDismissed, view, summary.overdue, monthIndex, calendar])
+  }, [monthItems, refDay, arrearsDismissed, dueSoonDismissed, view, summary.overdue, monthIndex, calendar, today.year])
 
   const yearOverview = useMemo(
-    () => buildYearOverview(items, monthIndex, today, calendar),
-    [items, monthIndex, today, calendar],
+    () => buildYearOverview(items, today, calendar),
+    [items, today, calendar],
   )
 
   const emptyCopy = EMPTY_COPY[filter] ?? EMPTY_COPY.all
@@ -334,9 +337,9 @@ function usePaymentsController(initialItems: Payment[], today: TodayInfo) {
     setSortBy,
     prevMonth: () => setMonthIndex((m) => (m + 11) % 12),
     nextMonth: () => setMonthIndex((m) => (m + 1) % 12),
-    monthLabel: monthLabel(monthIndex, calendar),
-    monthNameOnly: monthLabel(monthIndex, calendar).split(" ")[0],
-    yearOnly: yearNumber(calendar),
+    monthLabel: monthLabel(monthIndex, calendar, today.year),
+    monthNameOnly: monthLabel(monthIndex, calendar, today.year).split(" ")[0],
+    yearOnly: yearNumber(calendar, today.year),
     calLabel: calendar === "hijri" ? "هجري" : "ميلادي",
     // derived
     refDay,

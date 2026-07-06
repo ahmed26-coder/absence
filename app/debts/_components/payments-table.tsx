@@ -6,7 +6,7 @@ import type { Payment } from "@/lib/payments/types"
 import { usePayments } from "./use-payments"
 import { deriveItem } from "./item-view"
 import { badge, flowPill } from "./styles"
-import { ArrowApply, CheckIcon, ChevronRight } from "./icons"
+import { ArrowApply, CheckIcon, ChevronLeft } from "./icons"
 
 const GRID = "minmax(230px,2.6fr) 132px 96px 96px 96px 108px 230px 46px"
 
@@ -19,6 +19,7 @@ function Row({ it }: { it: Payment }) {
 
   return (
     <div
+      role="row"
       style={{
         position: "relative",
         display: "grid",
@@ -31,9 +32,9 @@ function Row({ it }: { it: Payment }) {
         animation: v.hasError ? "payShake .5s" : undefined,
       }}
     >
-      <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: "3px", background: v.barColor }} />
+      <div aria-hidden="true" style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: "3px", background: v.barColor }} />
 
-      <div style={{ minWidth: 0 }}>
+      <div role="cell" style={{ minWidth: 0 }}>
         <div
           style={{
             fontWeight: 800,
@@ -53,19 +54,19 @@ function Row({ it }: { it: Payment }) {
         </div>
       </div>
 
-      <div>
+      <div role="cell">
         <span style={badge(v.badgeBg, v.badgeFg)}>
           <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: v.dotColor }} />
           {v.statusLabel}
         </span>
       </div>
 
-      <div style={centerNum}>{v.expected}</div>
-      <div style={{ ...centerNum, color: "var(--green)" }}>{v.paid}</div>
-      <div style={{ ...centerNum, color: v.remTone }}>{v.remaining}</div>
-      <div style={{ textAlign: "center", fontWeight: 700, fontSize: "12px", color: v.dueTone }}>{v.dueLabel}</div>
+      <div role="cell" style={centerNum}>{v.expected}</div>
+      <div role="cell" style={{ ...centerNum, color: "var(--green)" }}>{v.paid}</div>
+      <div role="cell" style={{ ...centerNum, color: v.remTone }}>{v.remaining}</div>
+      <div role="cell" style={{ textAlign: "center", fontWeight: 700, fontSize: "12px", color: v.dueTone }}>{v.dueLabel}</div>
 
-      <div>
+      <div role="cell">
         {v.showActions ? (
           <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
             <button
@@ -157,7 +158,7 @@ function Row({ it }: { it: Payment }) {
         )}
       </div>
 
-      <div>
+      <div role="cell">
         <button
           type="button"
           onClick={() => p.setOpenId(it.id)}
@@ -175,7 +176,7 @@ function Row({ it }: { it: Payment }) {
             cursor: "pointer",
           }}
         >
-          <ChevronRight size={16} />
+          <ChevronLeft size={16} />
         </button>
       </div>
     </div>
@@ -198,8 +199,9 @@ export function PaymentsTable() {
       }}
     >
       <div className="pay-tabs" style={{ overflowX: "auto" }}>
-        <div style={{ minWidth: "1060px" }}>
+        <div role="table" aria-label="جدول المدفوعات" style={{ minWidth: "1060px" }}>
           <div
+            role="row"
             style={{
               display: "grid",
               gridTemplateColumns: GRID,
@@ -213,14 +215,14 @@ export function PaymentsTable() {
               color: "var(--muted)",
             }}
           >
-            <div>الدافع / المصدر</div>
-            <div>الحالة</div>
-            <div style={{ textAlign: "center" }}>المتوقع</div>
-            <div style={{ textAlign: "center" }}>المدفوع</div>
-            <div style={{ textAlign: "center" }}>المتبقي</div>
-            <div style={{ textAlign: "center" }}>الاستحقاق</div>
-            <div style={{ textAlign: "center" }}>تحصيل سريع</div>
-            <div />
+            <div role="columnheader">الدافع / المصدر</div>
+            <div role="columnheader">الحالة</div>
+            <div role="columnheader" style={{ textAlign: "center" }}>المتوقع</div>
+            <div role="columnheader" style={{ textAlign: "center" }}>المدفوع</div>
+            <div role="columnheader" style={{ textAlign: "center" }}>المتبقي</div>
+            <div role="columnheader" style={{ textAlign: "center" }}>الاستحقاق</div>
+            <div role="columnheader" style={{ textAlign: "center" }}>تحصيل سريع</div>
+            <div role="columnheader" aria-label="إجراءات" />
           </div>
           {p.visibleItems.map((it) => (
             <Row key={it.id} it={it} />

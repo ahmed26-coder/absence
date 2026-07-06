@@ -116,12 +116,16 @@ export function monthName(monthIndex: number, calendar: Calendar): string {
   return (calendar === "hijri" ? HIJRI_MONTHS : GREG_MONTHS)[monthIndex]
 }
 
-export function yearNumber(calendar: Calendar): number {
-  return calendar === "hijri" ? HIJRI_YEAR : GREG_YEAR
+export function yearNumber(calendar: Calendar, gregYear: number): number {
+  // The Hijri toggle is a display-preference offset over the same Gregorian year
+  // (see constants), not a calendar-accurate conversion. GREG_YEAR/HIJRI_YEAR
+  // only anchor that offset, so labels track the real viewed year instead of
+  // freezing at 2026/1448 once the calendar rolls into 2027.
+  return calendar === "hijri" ? gregYear + (HIJRI_YEAR - GREG_YEAR) : gregYear
 }
 
-export function monthLabel(monthIndex: number, calendar: Calendar): string {
-  return `${monthName(monthIndex, calendar)} ${yearNumber(calendar)}`
+export function monthLabel(monthIndex: number, calendar: Calendar, gregYear: number): string {
+  return `${monthName(monthIndex, calendar)} ${yearNumber(calendar, gregYear)}`
 }
 
 /**
@@ -166,7 +170,6 @@ export interface YearOverview {
  */
 export function buildYearOverview(
   items: Payment[],
-  currentMonthIndex: number,
   today: { year: number; month: number; day: number },
   calendar: Calendar,
 ): YearOverview {
@@ -181,8 +184,16 @@ export function buildYearOverview(
     totalExpected += summary.expected
     totalIncoming += summary.incoming
 
-    const isCurrent = mi === currentMonthIndex
-    const isFuture = summary.expected === 0
+    // "Current" is fixed by today, not the toolbar-selected month: the grid is a
+    // single loaded year, so the current cell is always today's month. Keying it
+    // off the viewed month would paint whichever month the user paged to as
+    // "current" (and strip today's marker) the moment they open the year tab.
+    const isCurrent = mi === today.month
+    // "Future" must come from the calendar, not from whether income happened to
+    // be expected: referenceDay returns 0 only for months that have not started
+    // yet. Deriving it from expected===0 mislabels real past months that carry
+    // only expenses (no income) as upcoming.
+    const isFuture = refDay === 0
     let tag: YearTag
     if (isCurrent) tag = "current"
     else if (isFuture) tag = "upcoming"

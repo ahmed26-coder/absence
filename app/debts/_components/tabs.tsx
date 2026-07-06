@@ -11,15 +11,14 @@ export function PaymentsTabs() {
     <div className="mb-3 flex flex-wrap items-center justify-between gap-3 print:hidden">
       <div
         className="pay-tabs -mx-4 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
-        role="tablist"
+        role="group"
         aria-label="تصفية العمليات"
       >
         {p.tabs.map((t) => (
           <button
             key={t.key}
             type="button"
-            role="tab"
-            aria-selected={t.active}
+            aria-pressed={t.active}
             onClick={() => p.setFilter(t.key)}
             style={tabPill(t.active)}
           >
